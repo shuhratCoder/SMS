@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   Users, UsersRound, Send, MessageSquare,
@@ -10,6 +11,7 @@ import { GlassCard, StatCard } from '@/components/ui/GlassCard'
 import { SmsOverviewChart, DeliveryPieChart } from '@/components/charts/SmsCharts'
 import { dashboardStats, recentActivities, topGroups } from '@/lib/mock-data'
 import { cn } from '@/lib/utils'
+import { api } from '@/lib/api'
 import Link from 'next/link'
 
 // Статусные цвета для активности
@@ -20,18 +22,47 @@ const statusColors = {
 }
 
 export default function DashboardPage() {
+  const [contactsCount, setContactsCount] = useState<number>(dashboardStats.totalContacts)
+  const [groupsCount, setGroupsCount] = useState<number>(dashboardStats.activeGroups)
+  const [loadingStats, setLoadingStats] = useState(true)
+  const [statsError, setStatsError] = useState('')
+
+  useEffect(() => {
+    let isMounted = true
+    setLoadingStats(true)
+    setStatsError('')
+
+    Promise.all([api.getContacts(), api.getGroups()])
+      .then(([contacts, groups]) => {
+        if (!isMounted) return
+        setContactsCount(Array.isArray(contacts) ? contacts.length : dashboardStats.totalContacts)
+        setGroupsCount(Array.isArray(groups) ? groups.length : dashboardStats.activeGroups)
+      })
+      .catch((err) => {
+        console.error('Dashboard stats load error', err)
+        if (!isMounted) return
+        setStatsError(err instanceof Error ? err.message : 'Ma’lumot yuklanmadi')
+      })
+      .finally(() => {
+        if (!isMounted) return
+        setLoadingStats(false)
+      })
+
+    return () => { isMounted = false }
+  }, [])
+
   // Конфигурация карточек статистики
   const stats = [
     {
       title: 'Total Contacts',
-      value: dashboardStats.totalContacts,
+      value: loadingStats ? '...' : contactsCount,
       icon: <Users className="w-5 h-5 text-purple-400" />,
       gradient: 'from-purple-500/20 to-purple-500/5',
       change: '12%',
     },
     {
       title: 'Active Groups',
-      value: dashboardStats.activeGroups,
+      value: loadingStats ? '...' : groupsCount,
       icon: <UsersRound className="w-5 h-5 text-blue-400" />,
       gradient: 'from-blue-500/20 to-blue-500/5',
       change: '3',
@@ -84,6 +115,12 @@ export default function DashboardPage() {
           />
         ))}
       </div>
+
+      {statsError && (
+        <div className="rounded-xl border border-rose-400/50 bg-rose-500/10 text-rose-100 p-3 text-sm">
+          Dashboard API xatolik: {statsError}
+        </div>
+      )}
 
       {/* Средняя секция: графики + быстрые действия */}
       <div className="grid grid-cols-3 gap-4">

@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Search, Plus, Pencil, Trash2, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react'
 import { GlassCard } from '@/components/ui/GlassCard'
-import { contacts } from '@/lib/mock-data'
 import { getInitials } from '@/lib/utils'
+import { api } from '@/lib/api'
 
 const ITEMS_PER_PAGE = 8
 
@@ -22,6 +22,23 @@ const avatarColors = [
 export default function ContactsPage() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const [contacts, setContacts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    setLoading(true)
+    setError('')
+    api.getContacts()
+      .then((data) => {
+        setContacts(data)
+      })
+      .catch((err) => {
+        console.error(err)
+        setError(err instanceof Error ? err.message : 'Contacts yuklanmadi')
+      })
+      .finally(() => setLoading(false))
+  }, [])
 
   // Фильтрация по поиску
   const filtered = contacts.filter((c) =>
@@ -74,8 +91,16 @@ export default function ContactsPage() {
         </button>
       </motion.div>
 
-      {/* Таблица контактов */}
-      <GlassCard delay={0.2} className="overflow-hidden">
+      {loading ? (
+        <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] p-5 text-white/70">
+          Loading contacts...
+        </div>
+      ) : error ? (
+        <div className="rounded-2xl bg-rose-500/10 border border-rose-400/30 p-5 text-rose-200">
+          {error}
+        </div>
+      ) : (
+        <GlassCard delay={0.2} className="overflow-hidden">
         {/* Заголовок таблицы */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
           <h2 className="text-white font-semibold">Full Name</h2>
@@ -170,6 +195,7 @@ export default function ContactsPage() {
           </button>
         </div>
       </GlassCard>
+      )}
     </div>
   )
 }

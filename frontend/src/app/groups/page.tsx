@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Plus, Pencil, ChevronLeft, ChevronRight, Users, SlidersHorizontal } from 'lucide-react'
 import { GlassCard } from '@/components/ui/GlassCard'
-import { groups } from '@/lib/mock-data'
+import { api } from '@/lib/api'
 
 const ITEMS_PER_PAGE = 6
 
@@ -12,6 +12,21 @@ export default function GroupsPage() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [showManageTooltip, setShowManageTooltip] = useState<string | null>(null)
+  const [groups, setGroups] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    setLoading(true)
+    setError('')
+    api.getGroups()
+      .then((data) => setGroups(data))
+      .catch((err) => {
+        console.error(err)
+        setError(err instanceof Error ? err.message : 'Groups yuklanmadi')
+      })
+      .finally(() => setLoading(false))
+  }, [])
 
   const filtered = groups.filter((g) =>
     g.name.toLowerCase().includes(search.toLowerCase())
@@ -55,8 +70,16 @@ export default function GroupsPage() {
         </button>
       </motion.div>
 
-      {/* Таблица групп */}
-      <GlassCard delay={0.2} className="overflow-hidden">
+      {loading ? (
+        <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] p-5 text-white/70">
+          Loading groups...
+        </div>
+      ) : error ? (
+        <div className="rounded-2xl bg-rose-500/10 border border-rose-400/30 p-5 text-rose-200">
+          {error}
+        </div>
+      ) : (
+        <GlassCard delay={0.2} className="overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
           <h2 className="text-white font-semibold">Groups</h2>
           <div className="flex items-center gap-2 text-xs text-white/40 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
@@ -173,6 +196,7 @@ export default function GroupsPage() {
           </button>
         </div>
       </GlassCard>
+      )}
     </div>
   )
 }

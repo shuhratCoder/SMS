@@ -9,26 +9,28 @@ import { useRouter } from 'next/navigation'
 const translations = {
   uz: {
     subtitle: 'Admin Panel',
-    emailPlaceholder: 'Email',
+    usernamePlaceholder: 'Username',
     passwordPlaceholder: 'Parol',
     loginBtn: 'Kirish',
     forgotPassword: 'Parolni unutdingizmi?',
   },
   ru: {
     subtitle: 'Панель Администратора',
-    emailPlaceholder: 'Email',
+    usernamePlaceholder: 'Имя пользователя',
     passwordPlaceholder: 'Пароль',
     loginBtn: 'Войти',
     forgotPassword: 'Забыли пароль?',
   },
   en: {
     subtitle: 'Admin Panel',
-    emailPlaceholder: 'Email',
+    usernamePlaceholder: 'Username',
     passwordPlaceholder: 'Password',
     loginBtn: 'Login',
     forgotPassword: 'Forgot password?',
   },
 }
+
+import { api } from '@/lib/api'
 
 type Lang = 'uz' | 'ru' | 'en'
 
@@ -36,21 +38,31 @@ export default function LoginPage() {
   const router = useRouter()
   const [lang, setLang] = useState<Lang>('uz')
   const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
   const [focused, setFocused] = useState<string | null>(null)
 
   const t = translations[lang]
 
-  // Обработчик входа (мок)
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    // Имитируем задержку сети
-    await new Promise((r) => setTimeout(r, 1200))
-    setIsLoading(false)
-    router.push('/dashboard')
+    setError('')
+    try {
+      const result = await api.login(username, password)
+      if (!result.token) {
+        throw new Error('Token topilmadi')
+      }
+      localStorage.setItem('token', result.token)
+      router.push('/dashboard')
+    } catch (err) {
+      console.error(err)
+      setError(err instanceof Error ? err.message : 'Login xatolik')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -95,7 +107,7 @@ export default function LoginPage() {
 
             {/* Форма */}
             <form onSubmit={handleLogin} className="space-y-4">
-              {/* Поле Email */}
+              {/* Поле Username */}
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -103,19 +115,19 @@ export default function LoginPage() {
                 className={`
                   flex items-center gap-3 px-4 py-3.5 rounded-2xl
                   backdrop-blur-sm border transition-all duration-200
-                  ${focused === 'email'
+                  ${focused === 'username'
                     ? 'bg-white/[0.08] border-purple-500/50 shadow-glow-sm'
                     : 'bg-white/[0.04] border-white/[0.08]'
                   }
                 `}
               >
-                <Mail className={`w-4 h-4 flex-shrink-0 transition-colors ${focused === 'email' ? 'text-purple-400' : 'text-white/30'}`} />
+                <Mail className={`w-4 h-4 flex-shrink-0 transition-colors ${focused === 'username' ? 'text-purple-400' : 'text-white/30'}`} />
                 <input
-                  type="email"
-                  placeholder={t.emailPlaceholder}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onFocus={() => setFocused('email')}
+                  type="text"
+                  placeholder={t.usernamePlaceholder}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  onFocus={() => setFocused('username')}
                   onBlur={() => setFocused(null)}
                   className="flex-1 bg-transparent text-white placeholder-white/25 text-sm outline-none"
                   required
@@ -195,6 +207,12 @@ export default function LoginPage() {
                   <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 opacity-0 hover:opacity-100 transition-opacity" />
                 </button>
               </motion.div>
+
+              {error && (
+                <div className="text-sm text-rose-300 bg-rose-500/10 border border-rose-500/20 rounded-xl px-3 py-2 mt-2">
+                  {error}
+                </div>
+              )}
 
               {/* Забыли пароль */}
               <motion.p

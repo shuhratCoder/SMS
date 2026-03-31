@@ -1,10 +1,13 @@
 const express = require("express");
+const cors = require("cors");
 const sequelize = require("./db");
 const userRouter = require("./routes/user");
 const contactRouter=require("./routes/constact")
 const groupRouter=require("./routes/group")
-const app = express();
 const {Contact,Group}=require("./models/association")
+const app = express();
+
+app.use(cors());
 app.use(express.json());
 const PORT = process.env.PORT || 2002;
 
