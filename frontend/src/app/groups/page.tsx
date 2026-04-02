@@ -29,7 +29,7 @@ export default function GroupsPage() {
   }, [])
 
   const filtered = groups.filter((g) =>
-    g.name.toLowerCase().includes(search.toLowerCase())
+    g.groupName.toLowerCase().includes(search.toLowerCase())
   )
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
@@ -110,11 +110,11 @@ export default function GroupsPage() {
                 <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${group.color} flex items-center justify-center text-xs font-bold text-white flex-shrink-0`}>
                   {group.initial}
                 </div>
-                <span className="text-sm text-white/85 font-medium">{group.name}</span>
+                <span className="text-sm text-white/85 font-medium">{group.groupName}</span>
               </div>
 
               {/* Количество участников */}
-              <div className="text-sm text-white/70">{group.members}</div>
+              <div className="text-sm text-white/70">{group.contacts.length}</div>
 
               {/* Последнее использование */}
               <div className="text-sm text-white/50">{group.lastUsed}</div>

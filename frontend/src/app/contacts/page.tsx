@@ -41,11 +41,11 @@ export default function ContactsPage() {
   }, [])
 
   // Фильтрация по поиску
-  const filtered = contacts.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.phone.includes(search) ||
-    c.position.toLowerCase().includes(search.toLowerCase())
-  )
+const filtered = contacts.filter((c) =>
+  (c.fullname || "").toLowerCase().includes(search.toLowerCase()) ||
+  (c.phoneNumber || "").includes(search) ||
+  (c.position || "").toLowerCase().includes(search.toLowerCase())
+)
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
@@ -130,15 +130,15 @@ export default function ContactsPage() {
               {/* Имя + аватар */}
               <div className="flex items-center gap-3">
                 <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarColors[i % avatarColors.length]} flex items-center justify-center text-xs font-bold text-white flex-shrink-0`}>
-                  {getInitials(contact.name)}
+                  {getInitials(contact.fullName)}
                 </div>
-                <span className="text-sm text-white/85 font-medium">{contact.name}</span>
+                <span className="text-sm text-white/85 font-medium">{contact.fullName}</span>
               </div>
 
               {/* Телефон + флаг */}
               <div className="flex items-center gap-2 text-sm text-white/70">
                 <span>{contact.flag}</span>
-                <span>{contact.phone}</span>
+                <span>{contact.phoneNumber}</span>
               </div>
 
               {/* Должность */}

@@ -2,24 +2,46 @@ const express = require("express");
 const router = express.Router();
 const groupModel = require("../models/group");
 const contactModel = require("../models/contact");
+const { Group, Contact } = require("../models/association");
 const autentication = require("../middlewares/authentication");
 
 router.get("/groupAll", autentication, async (req, res) => {
   try {
-    const groups = await groupModel.findAll({ raw: true });
+    const groups = await Group.findAll({
+      include: [
+        {
+          model: Contact,
+          attributes: ["id", "fullName", "phoneNumber", "position"],
+          through: { attributes: [] } // 🔥 pivot table ni yashiradi
+        }
+      ]
+    });
     res.status(200).json(groups);
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: "Error" });
   }
 });
-
 router.post("/createGroup", autentication, async (req, res) => {
   try {
-    const group = await groupModel.build(req.body);
-    group.save();
-    res.status(200).json({ message: "Successfuly created group" });
+    const group = await groupModel.create(req.body);
+    res.status(200).json({ message: "Successfuly created group", data: group });
   } catch (error) {
     console.error(error);
+
+    if (error.name === "SequelizeUniqueConstraintError") {
+      const field = error.errors[0].path;
+      if (field === "groupName") {
+        return res.status(400).json({
+          message: "Bu group name band",
+        });
+      }
+    }
+
+    // 🔥 DEFAULT ERROR
+    return res.status(500).json({
+      message: "Server error",
+    });
   }
 });
 
@@ -29,6 +51,19 @@ router.put("/updateGroup/:id", autentication, async (req, res) => {
     res.status(200).json({ message: "Group yangilandi" });
   } catch (error) {
     console.error(error);
+    if (error.name === "SequelizeUniqueConstraintError") {
+      const field = error.errors[0].path;
+      if (field === "groupName") {
+        return res.status(400).json({
+          message: "Bu group name band",
+        });
+      }
+    }
+
+    // 🔥 DEFAULT ERROR
+    return res.status(500).json({
+      message: "Server error",
+    });
   }
 });
 

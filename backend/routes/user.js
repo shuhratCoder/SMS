@@ -4,7 +4,6 @@ const bcrypt = require("bcryptjs");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
 const authentication = require("../middlewares/authentication");
-const path = require("path");
 
 router.post("/", async (req, res) => {
   try {

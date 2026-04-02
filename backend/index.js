@@ -4,6 +4,7 @@ const sequelize = require("./db");
 const userRouter = require("./routes/user");
 const contactRouter=require("./routes/constact")
 const groupRouter=require("./routes/group")
+const smsRouter=require("./routes/sendSms")
 const {Contact,Group}=require("./models/association")
 const app = express();
 
@@ -20,6 +21,7 @@ async function start() {
     app.use("/users", userRouter);
     app.use("/contacts",contactRouter)
     app.use("/groups",groupRouter)
+    app.use("/messages",smsRouter)
     sequelize
       .sync()
       .then(() => console.log("DB synced"))

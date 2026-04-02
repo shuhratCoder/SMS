@@ -18,8 +18,9 @@ export function truncate(str: string, maxLength: number): string {
 }
 
 // Получение инициалов из имени
-export function getInitials(name: string): string {
-  return name
+export function getInitials(fullName: string): string {
+   if (!fullName) return "??"
+  return fullName
     .split(' ')
     .map((n) => n[0])
     .join('')
