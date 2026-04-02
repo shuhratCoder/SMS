@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Search, Plus, Pencil, Trash2, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react'
 import { GlassCard } from '@/components/ui/GlassCard'
@@ -31,6 +31,7 @@ function ContactsPageInner() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const suppressAutoOpenRef = useRef(false)
   const [form, setForm] = useState<Partial<Contact>>({
     name: '',
     phone: '',
@@ -49,6 +50,7 @@ function ContactsPageInner() {
   }
 
   const openCreate = () => {
+    suppressAutoOpenRef.current = false
     setForm({ name: '', phone: '', position: '', flag: '🏳️', country: '', group: '', status: 'active' })
     setCreateOpen(true)
     const url = new URL(window.location.href)
@@ -58,6 +60,7 @@ function ContactsPageInner() {
   }
 
   const openEdit = (c: Contact) => {
+    suppressAutoOpenRef.current = false
     setEditContact(c)
     setForm({ ...c })
     const url = new URL(window.location.href)
@@ -67,6 +70,7 @@ function ContactsPageInner() {
   }
 
   const closeForm = () => {
+    suppressAutoOpenRef.current = true
     setCreateOpen(false)
     setEditContact(null)
     setForm({ name: '', phone: '', position: '', flag: '🏳️', country: '', group: '', status: 'active' })
@@ -75,6 +79,7 @@ function ContactsPageInner() {
 
   const saveForm = () => {
     if (!form.name?.trim() || !form.phone?.trim()) return
+    suppressAutoOpenRef.current = true
     if (editContact) {
       setContacts((cs) => cs.map(c => c.id === editContact.id ? { ...(c as Contact), ...(form as Contact) } : c))
       setEditContact(null)
@@ -100,6 +105,12 @@ function ContactsPageInner() {
   useEffect(() => {
     const modal = searchParams.get('contactModal')
     const id = searchParams.get('id')
+    if (suppressAutoOpenRef.current) {
+      // Don't re-open modal while we are saving/closing and the URL is still old.
+      // Once `contactModal` disappears, allow auto-open again.
+      if (!modal) suppressAutoOpenRef.current = false
+      return
+    }
     if (modal === 'create') {
       if (!createOpen) openCreate()
     } else if (modal === 'edit' && id) {
