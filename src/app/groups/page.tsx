@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Plus, Pencil, ChevronLeft, ChevronRight, Users, SlidersHorizontal, Trash2, X } from 'lucide-react'
 import { GlassCard } from '@/components/ui/GlassCard'
@@ -24,11 +24,17 @@ function GroupsPageInner() {
   const [groupNameInput, setGroupNameInput] = useState('')
   const router = useRouter()
   const searchParams = useSearchParams()
+  const suppressAutoOpenRef = useRef(false)
 
   // Auto-open via URL
   useEffect(() => {
     const modal = searchParams.get('groupModal')
     const id = searchParams.get('id')
+    if (suppressAutoOpenRef.current) {
+      // Ждём, пока параметры очистятся, затем разрешаем авто-открытие снова
+      if (!modal) suppressAutoOpenRef.current = false
+      return
+    }
     if (modal === 'create') {
       if (!createOpen) { setGroupNameInput(''); setCreateOpen(true) }
     } else if (modal === 'edit' && id) {
@@ -51,6 +57,7 @@ function GroupsPageInner() {
   }, [searchParams, groups, contacts])
 
   const openManage = (group: Group) => {
+    suppressAutoOpenRef.current = false
     setManageGroup(group)
     setManageSearch('')
     const selected = new Set(
@@ -64,6 +71,7 @@ function GroupsPageInner() {
   }
 
   const closeManage = () => {
+    suppressAutoOpenRef.current = true
     setManageGroup(null)
     setManageSearch('')
     setDraftSelected(new Set())
@@ -83,6 +91,7 @@ function GroupsPageInner() {
   }
 
   const saveManage = () => {
+    suppressAutoOpenRef.current = true
     if (!manageGroup) return
     const groupName = manageGroup.name
     const selectedIds = draftSelected
@@ -137,6 +146,7 @@ function GroupsPageInner() {
         <div className="flex justify-end">
         <button
           onClick={() => {
+            suppressAutoOpenRef.current = false
             setCreateOpen(true); setGroupNameInput('')
             const url = new URL(window.location.href)
             url.searchParams.set('groupModal', 'create')
@@ -224,6 +234,7 @@ function GroupsPageInner() {
 
                 <button
                   onClick={() => {
+                    suppressAutoOpenRef.current = false
                     setEditGroup(group); setGroupNameInput(group.name)
                     const url = new URL(window.location.href)
                     url.searchParams.set('groupModal', 'edit')
@@ -432,7 +443,7 @@ function GroupsPageInner() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] flex items-center justify-center p-4"
           >
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setCreateOpen(false); setEditGroup(null) }} />
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { suppressAutoOpenRef.current = true; setCreateOpen(false); setEditGroup(null) }} />
             {/* Clear query on close */}
             {false}
             <motion.div
@@ -448,6 +459,7 @@ function GroupsPageInner() {
                 </div>
                 <button
                   onClick={() => {
+                    suppressAutoOpenRef.current = true
                     setCreateOpen(false); setEditGroup(null)
                     const url = new URL(window.location.href)
                     url.searchParams.delete('groupModal')
@@ -472,6 +484,7 @@ function GroupsPageInner() {
               <div className="px-5 py-4 border-t border-white/[0.06] flex items-center justify-end gap-2">
                 <button
                   onClick={() => {
+                    suppressAutoOpenRef.current = true
                     setCreateOpen(false); setEditGroup(null)
                     const url = new URL(window.location.href)
                     url.searchParams.delete('groupModal')
@@ -484,6 +497,7 @@ function GroupsPageInner() {
                 </button>
                 <button
                   onClick={() => {
+                    suppressAutoOpenRef.current = true
                     if (!groupNameInput.trim()) return
                     if (editGroup) {
                       setGroups((gs) => gs.map(g => g.id === editGroup.id ? { ...g, name: groupNameInput.trim() } : g))
