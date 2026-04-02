@@ -176,16 +176,6 @@ export default function HistoryPage() {
                   {/* Время */}
                   <span className="text-sm text-white/45">{sms.sentAt}</span>
 
-                  {/* Кнопки */}
-                  <div className="flex items-center gap-2">
-                    <button className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-white/60 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:text-white/90 transition-all">
-                      <Pencil className="w-3 h-3" />
-                      Edit
-                    </button>
-                    <button className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-all">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
                 </motion.div>
               )
             })

@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard,
   Users,
@@ -29,13 +29,14 @@ const navItems = [
 
 // Нижние иконки (уведомления, профиль и т.д.)
 const bottomItems = [
-  { icon: Bell, label: 'Notifications' },
+  // { icon: Bell, label: 'Notifications' },
   { icon: UserCircle, label: 'Profile' },
   { icon: LogOut, label: 'Logout' },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
 
   return (
     <motion.aside
@@ -114,6 +115,11 @@ export function Sidebar() {
                 key={label}
                 title={label}
                 className="text-white/30 hover:text-white/70 transition-colors"
+                onClick={() => {
+                  if (label === 'Logout') {
+                    router.push('/login')
+                  }
+                }}
               >
                 <Icon className="w-4 h-4" />
               </button>

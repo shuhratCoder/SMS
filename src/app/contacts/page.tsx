@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Search, Plus, Pencil, Trash2, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react'
 import { GlassCard } from '@/components/ui/GlassCard'
-import { contacts } from '@/lib/mock-data'
+import { contacts as mockContacts, groups as mockGroups, type Contact, type Group } from '@/lib/mock-data'
 import { getInitials } from '@/lib/utils'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 const ITEMS_PER_PAGE = 8
 
@@ -19,9 +20,100 @@ const avatarColors = [
   'from-indigo-500 to-purple-500',
 ]
 
-export default function ContactsPage() {
+function ContactsPageInner() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const [contacts, setContacts] = useState<Contact[]>(mockContacts)
+  const [groups] = useState<Group[]>(mockGroups)
+  const [editContact, setEditContact] = useState<Contact | null>(null)
+  const [createOpen, setCreateOpen] = useState(false)
+  const [deleteContact, setDeleteContact] = useState<Contact | null>(null)
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [form, setForm] = useState<Partial<Contact>>({
+    name: '',
+    phone: '',
+    position: '',
+    flag: '🏳️',
+    country: '',
+    group: '',
+    status: 'active',
+  })
+
+  const clearQuery = () => {
+    const url = new URL(window.location.href)
+    url.searchParams.delete('contactModal')
+    url.searchParams.delete('id')
+    router.replace(url.pathname + (url.search ? url.search : ''), { scroll: false })
+  }
+
+  const openCreate = () => {
+    setForm({ name: '', phone: '', position: '', flag: '🏳️', country: '', group: '', status: 'active' })
+    setCreateOpen(true)
+    const url = new URL(window.location.href)
+    url.searchParams.set('contactModal', 'create')
+    url.searchParams.delete('id')
+    router.replace(url.pathname + '?' + url.searchParams.toString(), { scroll: false })
+  }
+
+  const openEdit = (c: Contact) => {
+    setEditContact(c)
+    setForm({ ...c })
+    const url = new URL(window.location.href)
+    url.searchParams.set('contactModal', 'edit')
+    url.searchParams.set('id', c.id)
+    router.replace(url.pathname + '?' + url.searchParams.toString(), { scroll: false })
+  }
+
+  const closeForm = () => {
+    setCreateOpen(false)
+    setEditContact(null)
+    setForm({ name: '', phone: '', position: '', flag: '🏳️', country: '', group: '', status: 'active' })
+    clearQuery()
+  }
+
+  const saveForm = () => {
+    if (!form.name?.trim() || !form.phone?.trim()) return
+    if (editContact) {
+      setContacts((cs) => cs.map(c => c.id === editContact.id ? { ...(c as Contact), ...(form as Contact) } : c))
+      setEditContact(null)
+    } else {
+      const nowId = String(Date.now())
+      const newContact: Contact = {
+        id: nowId,
+        name: form.name!.trim(),
+        phone: form.phone!.trim(),
+        flag: form.flag || '🏳️',
+        country: form.country || '',
+        position: form.position || '',
+        group: form.group || '',
+        status: (form.status as Contact['status']) || 'active',
+      }
+      setContacts((cs) => [newContact, ...cs])
+      setCreateOpen(false)
+    }
+    clearQuery()
+  }
+
+  // Auto-open modal based on URL tags
+  useEffect(() => {
+    const modal = searchParams.get('contactModal')
+    const id = searchParams.get('id')
+    if (modal === 'create') {
+      if (!createOpen) openCreate()
+    } else if (modal === 'edit' && id) {
+      const c = contacts.find(c => c.id === id)
+      if (c && !editContact) openEdit(c)
+    } else {
+      // if params removed externally, ensure modals closed
+      if (createOpen || editContact) {
+        setCreateOpen(false)
+        setEditContact(null)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, contacts])
 
   // Фильтрация по поиску
   const filtered = contacts.filter((c) =>
@@ -34,6 +126,7 @@ export default function ContactsPage() {
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
 
   return (
+    <Suspense fallback={null}>
     <div className="space-y-5">
       {/* Заголовок + кнопка добавления */}
       <div className="flex items-center justify-between">
@@ -68,7 +161,10 @@ export default function ContactsPage() {
         </div>
 
         {/* Кнопка добавить */}
-        <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600/80 to-blue-600/80 border border-purple-500/30 text-white text-sm font-medium hover:shadow-glow-purple hover:-translate-y-0.5 transition-all">
+        <button
+          onClick={openCreate}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600/80 to-blue-600/80 border border-purple-500/30 text-white text-sm font-medium hover:shadow-glow-purple hover:-translate-y-0.5 transition-all"
+        >
           <Plus className="w-4 h-4" />
           Add Contact
         </button>
@@ -121,11 +217,17 @@ export default function ContactsPage() {
 
               {/* Действия */}
               <div className="flex items-center gap-2">
-                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white/60 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:text-white/90 transition-all">
+                <button
+                  onClick={() => openEdit(contact)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white/60 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:text-white/90 transition-all"
+                >
                   <Pencil className="w-3 h-3" />
                   Edit
                 </button>
-                <button className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-all">
+                <button
+                  onClick={() => setDeleteContact(contact)}
+                  className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-all"
+                >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -170,6 +272,149 @@ export default function ContactsPage() {
           </button>
         </div>
       </GlassCard>
+
+      {/* Create/Edit modal */}
+      {(createOpen || editContact) && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeForm} />
+          <div className="relative w-full max-w-xl rounded-2xl bg-bg-secondary/95 backdrop-blur-2xl border border-white/10 shadow-glass-lg overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+              <div className="text-lg font-semibold text-white">
+                {editContact ? 'Edit Contact' : 'Add Contact'}
+              </div>
+            </div>
+            <div className="px-5 py-4 grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className="block text-sm text-white/70 mb-1">Full name</label>
+                <input
+                  type="text"
+                  value={form.name || ''}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/85 placeholder-white/25 outline-none focus:border-purple-500/40 focus:bg-white/[0.07] transition-all"
+                  placeholder="John Doe"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-white/70 mb-1">Phone</label>
+                <input
+                  type="text"
+                  value={form.phone || ''}
+                  onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/85 placeholder-white/25 outline-none focus:border-purple-500/40 focus:bg-white/[0.07] transition-all"
+                  placeholder="+1 555 000 0000"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-white/70 mb-1">Position</label>
+                <input
+                  type="text"
+                  value={form.position || ''}
+                  onChange={(e) => setForm((f) => ({ ...f, position: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/85 placeholder-white/25 outline-none focus:border-purple-500/40 focus:bg-white/[0.07] transition-all"
+                  placeholder="Manager"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-white/70 mb-1">Flag (emoji)</label>
+                <input
+                  type="text"
+                  value={form.flag || ''}
+                  onChange={(e) => setForm((f) => ({ ...f, flag: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/85 placeholder-white/25 outline-none focus:border-purple-500/40 focus:bg-white/[0.07] transition-all"
+                  placeholder="🇺🇸"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-white/70 mb-1">Country</label>
+                <input
+                  type="text"
+                  value={form.country || ''}
+                  onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/85 placeholder-white/25 outline-none focus:border-purple-500/40 focus:bg-white/[0.07] transition-all"
+                  placeholder="USA"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-white/70 mb-1">Group</label>
+                <select
+                  value={form.group || ''}
+                  onChange={(e) => setForm((f) => ({ ...f, group: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/85 outline-none focus:border-purple-500/40 focus:bg-white/[0.07] transition-all"
+                >
+                  <option value="">—</option>
+                  {groups.map((g) => (
+                    <option key={g.id} value={g.name} className="text-black bg-white">{g.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-white/70 mb-1">Status</label>
+                <select
+                  value={form.status || 'active'}
+                  onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as Contact['status'] }))}
+                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/85 outline-none focus:border-purple-500/40 focus:bg-white/[0.07] transition-all"
+                >
+                  <option value="active" className="text-black bg-white">active</option>
+                  <option value="inactive" className="text-black bg-white">inactive</option>
+                </select>
+              </div>
+            </div>
+            <div className="px-5 py-4 border-t border-white/[0.06] flex items-center justify-end gap-2">
+              <button
+                onClick={closeForm}
+                className="px-4 py-2.5 rounded-xl text-sm text-white/60 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveForm}
+                className="px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-purple-600/80 to-blue-600/80 border border-purple-500/30 hover:shadow-glow-purple transition-all"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirm */}
+      {deleteContact && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDeleteContact(null)} />
+          <div className="relative w-full max-w-md rounded-2xl bg-bg-secondary/95 backdrop-blur-2xl border border-white/10 shadow-glass-lg overflow-hidden">
+            <div className="px-5 py-4 border-b border-white/[0.06] text-lg font-semibold text-white">Delete Contact</div>
+            <div className="px-5 py-4 text-sm text-white/70">
+              Delete contact “{deleteContact.name}”?
+            </div>
+            <div className="px-5 py-4 border-t border-white/[0.06] flex items-center justify-end gap-2">
+              <button
+                onClick={() => setDeleteContact(null)}
+                className="px-4 py-2.5 rounded-xl text-sm text-white/60 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setContacts((cs) => cs.filter(c => c.id !== deleteContact.id))
+                  setDeleteContact(null)
+                }}
+                className="px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-pink-600/80 to-red-600/80 border border-pink-500/30 hover:shadow-glow-purple transition-all"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+    </Suspense>
+  )
+}
+
+export default function ContactsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ContactsPageInner />
+    </Suspense>
   )
 }

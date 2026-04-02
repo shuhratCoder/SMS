@@ -72,17 +72,27 @@ export default function DashboardPage() {
 
       {/* Карточки статистики — staggered анимация */}
       <div className="grid grid-cols-5 gap-4">
-        {stats.map((stat, i) => (
-          <StatCard
-            key={stat.title}
-            title={stat.title}
-            value={stat.value}
-            icon={stat.icon}
-            change={stat.change}
-            gradient={stat.gradient}
-            delay={i * 0.07}
-          />
-        ))}
+        {stats.map((stat, i) => {
+          const href =
+            stat.title === 'Total Contacts' ? '/contacts' :
+            stat.title === 'Active Groups' ? '/groups' :
+            stat.title === 'SMS Sent Today' ? '/history' :
+            stat.title === 'SMS Sent This Month' ? '/history' :
+            stat.title === 'Delivery Rate' ? '/history' :
+            '/dashboard'
+          return (
+            <Link key={stat.title} href={href}>
+              <StatCard
+                title={stat.title}
+                value={stat.value}
+                icon={stat.icon}
+                change={stat.change}
+                gradient={stat.gradient}
+                delay={i * 0.07}
+              />
+            </Link>
+          )
+        })}
       </div>
 
       {/* Средняя секция: графики + быстрые действия */}
@@ -134,13 +144,13 @@ export default function DashboardPage() {
               {
                 label: 'Add Contact',
                 icon: <UserPlus className="w-4 h-4" />,
-                href: '/contacts',
+                href: '/contacts?contactModal=create',
                 gradient: 'from-blue-500 to-cyan-500',
               },
               {
                 label: 'Create Group',
                 icon: <UsersRound className="w-4 h-4" />,
-                href: '/groups',
+                href: '/groups?groupModal=create',
                 gradient: 'from-purple-500 to-pink-500',
               },
               {

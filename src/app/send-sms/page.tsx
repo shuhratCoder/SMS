@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useForm } from 'react-hook-form'
-import { CalendarDays, ChevronDown, Send, Check } from 'lucide-react'
+import { CalendarDays, ChevronDown, Send, Check, Search } from 'lucide-react'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { groups, contacts } from '@/lib/mock-data'
 
@@ -22,6 +22,7 @@ export default function SendSmsPage() {
   const [selectedRecipient, setSelectedRecipient] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
   const [scheduleDate, setScheduleDate] = useState('')
+  const [recipientSearch, setRecipientSearch] = useState('')
 
   const messageValue = watch('message') || ''
   const charCount = messageValue.length
@@ -29,11 +30,14 @@ export default function SendSmsPage() {
 
   // Все варианты получателей (группы + контакты)
   const allRecipients = [
-    ...groups.map((g) => ({ id: `group-${g.id}`, label: `📁 ${g.name}`, count: g.members })),
-    ...contacts.slice(0, 8).map((c) => ({ id: `contact-${c.id}`, label: `${c.flag} ${c.name}`, count: 1 })),
+    ...groups.map((g) => ({ id: `group-${g.id}`, type: 'group' as const, name: g.name, label: `📁 ${g.name}`, count: g.members })),
+    ...contacts.slice(0, 8).map((c) => ({ id: `contact-${c.id}`, type: 'contact' as const, name: c.name, label: `${c.flag} ${c.name}`, count: 1 })),
   ]
 
   const selected = allRecipients.find((r) => r.id === selectedRecipient)
+  const q = recipientSearch.trim().toLowerCase()
+  const filteredGroups = allRecipients.filter((r) => r.type === 'group' && (q ? r.name.toLowerCase().includes(q) : true))
+  const filteredContacts = allRecipients.filter((r) => r.type === 'contact' && (q ? r.name.toLowerCase().includes(q) : true))
 
   // Мок отправки
   const onSubmit = async (data: SendSmsForm) => {
@@ -67,7 +71,11 @@ export default function SendSmsPage() {
               <div className="relative">
                 <button
                   type="button"
-                  onClick={() => setShowDropdown(!showDropdown)}
+                  onClick={() => {
+                    const next = !showDropdown
+                    setShowDropdown(next)
+                    if (!next) setRecipientSearch('')
+                  }}
                   className={`
                     w-full flex items-center justify-between px-4 py-3 rounded-xl
                     bg-white/[0.04] border transition-all text-sm text-left
@@ -96,33 +104,66 @@ export default function SendSmsPage() {
                       transition={{ duration: 0.15 }}
                       className="absolute top-full left-0 right-0 mt-2 z-50 rounded-xl bg-bg-secondary/95 backdrop-blur-2xl border border-white/10 shadow-glass-lg overflow-hidden"
                     >
+                      {/* Поиск */}
+                      <div className="px-3 py-2 border-b border-white/[0.06]">
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] focus-within:border-purple-500/40 focus-within:bg-white/[0.07] transition-all">
+                          <Search className="w-4 h-4 text-white/30 flex-shrink-0" />
+                          <input
+                            type="text"
+                            value={recipientSearch}
+                            onChange={(e) => setRecipientSearch(e.target.value)}
+                            placeholder="Search group or contact..."
+                            className="flex-1 bg-transparent text-sm text-white/80 placeholder-white/25 outline-none"
+                            autoFocus
+                          />
+                          {recipientSearch && (
+                            <button
+                              type="button"
+                              onClick={() => setRecipientSearch('')}
+                              className="text-xs text-white/40 hover:text-white/70 transition-colors px-2 py-1 rounded-md hover:bg-white/[0.06]"
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
+                      </div>
                       <div className="max-h-60 overflow-y-auto py-1">
                         {/* Заголовок групп */}
                         <div className="px-4 py-2 text-xs text-white/30 uppercase tracking-wider">Groups</div>
-                        {allRecipients.filter(r => r.id.startsWith('group')).map((r) => (
+                        {filteredGroups.map((r) => (
                           <button
                             key={r.id}
                             type="button"
-                            onClick={() => { setSelectedRecipient(r.id); setShowDropdown(false) }}
+                            onClick={() => { setSelectedRecipient(r.id); setShowDropdown(false); setRecipientSearch('') }}
                             className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-white/70 hover:bg-white/[0.06] hover:text-white transition-all text-left"
                           >
                             <span>{r.label}</span>
                             <span className="text-white/30">{r.count} members</span>
                           </button>
                         ))}
+                        {filteredGroups.length === 0 && (
+                          <div className="px-4 py-2.5 text-sm text-white/30">
+                            No groups found
+                          </div>
+                        )}
 
                         {/* Заголовок контактов */}
                         <div className="px-4 py-2 text-xs text-white/30 uppercase tracking-wider border-t border-white/[0.06] mt-1">Contacts</div>
-                        {allRecipients.filter(r => r.id.startsWith('contact')).map((r) => (
+                        {filteredContacts.map((r) => (
                           <button
                             key={r.id}
                             type="button"
-                            onClick={() => { setSelectedRecipient(r.id); setShowDropdown(false) }}
+                            onClick={() => { setSelectedRecipient(r.id); setShowDropdown(false); setRecipientSearch('') }}
                             className="w-full flex items-center px-4 py-2.5 text-sm text-white/70 hover:bg-white/[0.06] hover:text-white transition-all text-left"
                           >
                             {r.label}
                           </button>
                         ))}
+                        {filteredContacts.length === 0 && (
+                          <div className="px-4 py-2.5 text-sm text-white/30">
+                            No contacts found
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   )}
