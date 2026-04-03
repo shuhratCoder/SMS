@@ -1,14 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState,useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   Search, Pencil, Trash2, ChevronLeft, ChevronRight,
   SlidersHorizontal, Download
 } from 'lucide-react'
 import { GlassCard } from '@/components/ui/GlassCard'
-import { smsHistory } from '@/lib/mock-data'
+import { api } from "@/lib/api";
 import { cn, getInitials } from '@/lib/utils'
+import { log } from 'console'
 
 // Конфиг статусов
 const statusConfig: Record<string, { label: string; className: string }> = {
@@ -33,11 +34,27 @@ export default function HistoryPage() {
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [page, setPage] = useState(1)
-
+  const [smsHistory, setSmsHistory] = useState<any[]>([]);
   // Фильтрация по поиску и статусу
+  
+   // 🔥 API
+    useEffect(() => {
+      api.getSmsHistory().then(setSmsHistory);
+    }, []);
+  
+    // 🔥 recipient function (ENG MUHIM FIX)
+  const getRecipient = (sms: any) => {
+  const names = [
+    ...(sms.contacts?.map((c: any) => c.fullName) || []),
+    ...(sms.groups?.map((g: any) => g.groupName) || [])
+  ];
+  return names.length ? names.join(", ") : "No recipient";
+};
+
   const filtered = smsHistory.filter((s) => {
+    const recipient = getRecipient(s);
     const matchSearch =
-      s.recipient.toLowerCase().includes(search.toLowerCase()) ||
+      recipient.toLowerCase().includes(search.toLowerCase()) ||
       s.message.toLowerCase().includes(search.toLowerCase())
     const matchStatus = filterStatus === 'all' || s.status === filterStatus
     return matchSearch && matchStatus
@@ -141,6 +158,20 @@ export default function HistoryPage() {
             </div>
           ) : (
             paginated.map((sms, i) => {
+
+              const formatTime = (date: string) => {
+                    const d = new Date(date)
+
+                    const day = String(d.getDate()).padStart(2, "0")
+                    const month = String(d.getMonth() + 1).padStart(2, "0")
+                    const year = d.getFullYear()
+
+                    const hours = String(d.getHours()).padStart(2, "0")
+                    const minutes = String(d.getMinutes()).padStart(2, "0")
+
+                    return `${day}.${month}.${year}, ${hours}:${minutes}`
+                  }
+              const recipient = getRecipient(sms) 
               const status = statusConfig[sms.status] || statusConfig.sent
               return (
                 <motion.div
@@ -156,9 +187,9 @@ export default function HistoryPage() {
                       'w-7 h-7 rounded-full bg-gradient-to-br flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0',
                       avatarColors[i % avatarColors.length]
                     )}>
-                      {getInitials(sms.recipient)}
+                      {getInitials(recipient)}
                     </div>
-                    <span className="text-sm text-white/85 truncate font-medium">{sms.recipient}</span>
+                    <span className="text-sm text-white/85 truncate font-medium">{recipient}</span>
                   </div>
 
                   {/* Текст сообщения */}
@@ -174,7 +205,7 @@ export default function HistoryPage() {
                   </span>
 
                   {/* Время */}
-                  <span className="text-sm text-white/45">{sms.sentAt}</span>
+                  <span className="text-sm text-white/45">{formatTime(sms.createdAt)}</span>
 
                   {/* Кнопки */}
                   <div className="flex items-center gap-2">

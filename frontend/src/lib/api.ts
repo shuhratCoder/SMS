@@ -108,13 +108,13 @@ export const api = {
     contactIds?: string[];
     groupIds?: string[];
   }) =>
-    doFetch("/sms/send", {
+    doFetch("/messages/send", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
 
   getSmsHistory: () =>
-    doFetch("/sms/history", {
+    doFetch("/messages/history", {
       method: "GET",
     }),
 };

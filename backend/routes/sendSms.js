@@ -46,7 +46,7 @@ router.get("/history", async (req, res) => {
         }
       ]
     });
-
+console.log(data);
     res.json(data);
 
   } catch (error) {
