@@ -5,7 +5,8 @@ import { motion } from 'framer-motion'
 import { Search, Plus, Pencil, Trash2, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { getInitials } from '@/lib/utils'
-import { api } from '@/lib/api'
+import{ 
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 const ITEMS_PER_PAGE = 8
 
