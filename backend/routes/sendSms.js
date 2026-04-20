@@ -8,8 +8,6 @@ const { Contact, Group } = require("../models/smsAssociation");
 router.post("/send", authentication, async (req, res) => {
   try {
     const { message, contactIds = [], groupIds = [] } = req.body;
-console.log(req.body);
-
     const sms = await SmsData.create({ message });
 
     // contactlarga
@@ -32,6 +30,8 @@ console.log(req.body);
 
 router.get("/history", async (req, res) => {
   try {
+    const date = req.query.date; // ✅ TO‘G‘RI
+
     const data = await SmsData.findAll({
       include: [
         {
@@ -46,8 +46,26 @@ router.get("/history", async (req, res) => {
         }
       ]
     });
-console.log(data);
-    res.json(data);
+
+    const dataToday = data.filter(sms => {
+      const today = new Date();
+      const smsDate = new Date(sms.createdAt);
+      return smsDate.toDateString() === today.toDateString();
+    });
+
+    const dataMonth = data.filter(sms => {
+      const today = new Date();
+      const smsDate = new Date(sms.createdAt);
+      return (
+        smsDate.getMonth() === today.getMonth() &&
+        smsDate.getFullYear() === today.getFullYear()
+      );
+    });
+
+    if (date === "today") return res.json(dataToday);
+    if (date === "month") return res.json(dataMonth);
+
+    return res.json(data); // default = all
 
   } catch (error) {
     console.error(error);

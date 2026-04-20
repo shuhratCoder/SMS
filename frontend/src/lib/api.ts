@@ -1,5 +1,5 @@
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:2002";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://192.168.8.222:2002";
 
 // 🔥 Universal fetch
 async function doFetch(path: string, options: RequestInit = {}) {
@@ -114,7 +114,11 @@ export const api = {
     }),
 
   getSmsHistory: () =>
-    doFetch("/messages/history", {
-      method: "GET",
-    }),
+  doFetch("/messages/history?date=all"),
+
+getSmsToday: () =>
+  doFetch("/messages/history?date=today"),
+
+getSmsMonth: () =>
+  doFetch("/messages/history?date=month"),
 };

@@ -13,6 +13,7 @@ import { dashboardStats, recentActivities, topGroups } from '@/lib/mock-data'
 import { cn } from '@/lib/utils'
 import { api } from '@/lib/api'
 import Link from 'next/link'
+import { set } from 'react-hook-form'
 
 // Статусные цвета для активности
 const statusColors = {
@@ -22,8 +23,10 @@ const statusColors = {
 }
 
 export default function DashboardPage() {
-  const [contactsCount, setContactsCount] = useState<number>(dashboardStats.totalContacts)
-  const [groupsCount, setGroupsCount] = useState<number>(dashboardStats.activeGroups)
+  const [contactsCount, setContactsCount] = useState<number>(0)
+  const [groupsCount, setGroupsCount] = useState<number>(0)
+  const [smsHistoryToday, setSmsHistoryToday] = useState<number>(0)
+  const [smsHistoryMonth, setSmsHistoryMonth] = useState<number>(0)
   const [loadingStats, setLoadingStats] = useState(true)
   const [statsError, setStatsError] = useState('')
 
@@ -32,11 +35,13 @@ export default function DashboardPage() {
     setLoadingStats(true)
     setStatsError('')
 
-    Promise.all([api.getContacts(), api.getGroups()])
-      .then(([contacts, groups]) => {
+    Promise.all([api.getContacts(), api.getGroups(),api.getSmsHistory(),api.getSmsToday(),api.getSmsMonth()])
+      .then(([contacts, groups, smsHistory, smsToday, smsMonth]) => {
         if (!isMounted) return
-        setContactsCount(Array.isArray(contacts) ? contacts.length : dashboardStats.totalContacts)
-        setGroupsCount(Array.isArray(groups) ? groups.length : dashboardStats.activeGroups)
+        setContactsCount(Array.isArray(contacts) ? contacts.length : 0)
+        setGroupsCount(Array.isArray(groups) ? groups.length : 0)
+        setSmsHistoryToday(Array.isArray(smsToday) ? smsToday.length : 0)
+        setSmsHistoryMonth(Array.isArray(smsMonth) ? smsMonth.length : 0)
       })
       .catch((err) => {
         console.error('Dashboard stats load error', err)
@@ -69,14 +74,14 @@ export default function DashboardPage() {
     },
     {
       title: 'SMS Sent Today',
-      value: dashboardStats.smsSentToday,
+      value: loadingStats ? '...' : smsHistoryToday,
       icon: <Send className="w-5 h-5 text-cyan-400" />,
       gradient: 'from-cyan-500/20 to-cyan-500/5',
       change: '24%',
     },
     {
       title: 'SMS Sent This Month',
-      value: dashboardStats.smsSentMonth,
+      value: loadingStats ? '...' : smsHistoryMonth,
       icon: <MessageSquare className="w-5 h-5 text-pink-400" />,
       gradient: 'from-pink-500/20 to-pink-500/5',
       change: '18%',
