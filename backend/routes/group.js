@@ -67,12 +67,34 @@ router.put("/updateGroup/:id", autentication, async (req, res) => {
   }
 });
 
-router.delete("/deleteGroup/:id", autentication, async (req, res) => {
+router.delete("/deleteGroup", autentication, async (req, res) => {
   try {
-    await groupModel.destroy({ where: { id: req.params.id } });
+    const id = req.query.id || req.params.id;
+    const group = await Group.findByPk(id);
+    if (!group) {
+      return res.status(404).json({ message: "Group topilmadi" });
+    }
+    await group.setContacts([]);
+    await group.destroy();
     res.status(200).json({ message: "Group deleted" });
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.delete("/deleteGroup/:id", autentication, async (req, res) => {
+  try {
+    const group = await Group.findByPk(req.params.id);
+    if (!group) {
+      return res.status(404).json({ message: "Group topilmadi" });
+    }
+    await group.setContacts([]);
+    await group.destroy();
+    res.status(200).json({ message: "Group deleted" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -85,7 +107,31 @@ router.post("/addContacts/:groupId", autentication, async (req, res) => {
     if (!group) {
       return res.status(404).json({ message: "Group topilmadi" });
     }
+
+    // Remove these contacts from all other groups first
+    if (Array.isArray(contactIds) && contactIds.length > 0) {
+      const contacts = await Contact.findAll({
+        where: { id: contactIds },
+        include: [{ model: Group }],
+      });
+      for (const contact of contacts) {
+        const otherGroups = (contact.groups || []).filter(
+          (g) => String(g.id) !== String(groupId)
+        );
+        if (otherGroups.length > 0) {
+          await contact.removeGroups(otherGroups.map((g) => g.id));
+          const now = new Date();
+          await Promise.all(
+            otherGroups.map((g) =>
+              groupModel.update({ lastUsed: now }, { where: { id: g.id } })
+            )
+          );
+        }
+      }
+    }
+
     await group.addContacts(contactIds);
+    await group.update({ lastUsed: new Date() });
     const contacts = await group.getContacts();
     res.status(200).json({
       message: "Contacts groupga qo'shildi",
@@ -105,6 +151,7 @@ router.post("/removeContacts/:groupId", autentication, async (req, res) => {
       return res.status(404).json({ message: "Group topilmadi" });
     }
     await group.removeContacts(contactIds);
+    await group.update({ lastUsed: new Date() });
     const contacts = await group.getContacts();
     res.status(200).json({
       message: "Contacts groupdan olib tashlandi",

@@ -14,7 +14,13 @@ import {
   Pie,
   Cell,
 } from 'recharts'
-import { chartData } from '@/lib/mock-data'
+import { chartData as fallbackChartData } from '@/lib/mock-data'
+
+export interface OverviewChartPoint {
+  day: string
+  sent: number
+  failed: number
+}
 
 // Кастомный тултип для графиков
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -39,7 +45,10 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 }
 
 // График SMS за последние 7 дней
-export function SmsOverviewChart() {
+export function SmsOverviewChart({ data }: { data?: OverviewChartPoint[] }) {
+  const chartData = data && data.length > 0
+    ? data
+    : (fallbackChartData.map((d) => ({ day: d.day, sent: d.sent, failed: d.failed })) as OverviewChartPoint[])
   return (
     <div className="h-52">
       <ResponsiveContainer width="100%" height="100%">
@@ -50,14 +59,9 @@ export function SmsOverviewChart() {
               <stop offset="0%" stopColor="#7c3aed" stopOpacity={0.9} />
               <stop offset="100%" stopColor="#7c3aed" stopOpacity={0.3} />
             </linearGradient>
-            <linearGradient id="barGradientBlue" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.9} />
-              <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.3} />
-            </linearGradient>
-            {/* Линия поверх графика */}
-            <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#7c3aed" />
-              <stop offset="100%" stopColor="#06b6d4" />
+            <linearGradient id="barGradientRed" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#ef4444" stopOpacity={0.9} />
+              <stop offset="100%" stopColor="#ef4444" stopOpacity={0.3} />
             </linearGradient>
           </defs>
           <CartesianGrid
@@ -75,11 +79,11 @@ export function SmsOverviewChart() {
             axisLine={false}
             tickLine={false}
             tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }}
-            ticks={[50, 125, 150, 230]}
+            allowDecimals={false}
           />
           <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
           <Bar dataKey="sent" fill="url(#barGradientPurple)" radius={[4, 4, 0, 0]} name="Sent" />
-          <Bar dataKey="delivered" fill="url(#barGradientBlue)" radius={[4, 4, 0, 0]} name="Delivered" />
+          <Bar dataKey="failed" fill="url(#barGradientRed)" radius={[4, 4, 0, 0]} name="Failed" />
         </BarChart>
       </ResponsiveContainer>
     </div>

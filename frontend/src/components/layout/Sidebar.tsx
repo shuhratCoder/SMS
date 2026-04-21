@@ -16,6 +16,7 @@ import {
   Box,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { api } from '@/lib/api'
 
 // Навигационные пункты
 const navItems = [
@@ -117,6 +118,8 @@ export function Sidebar() {
                 className="text-white/30 hover:text-white/70 transition-colors"
                 onClick={() => {
                   if (label === 'Logout') {
+                    localStorage.removeItem('token')
+                    api.clearCache()
                     router.push('/login')
                   }
                 }}

@@ -1,26 +1,25 @@
+'use client'
+
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
+import { AuthGuard } from '@/components/AuthGuard'
 
-// Layout для всех страниц дашборда (с сайдбаром и хедером)
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen">
-      {/* Боковое меню */}
-      <Sidebar />
-
-      {/* Верхняя панель */}
-      <Header />
-
-      {/* Основной контент */}
-      <main className="ml-[220px] pt-16 min-h-screen">
-        <div className="p-6">
-          {children}
-        </div>
-      </main>
-    </div>
+    <AuthGuard>
+      <div className="min-h-screen">
+        <Sidebar />
+        <Header />
+        <main className="ml-[220px] pt-16 min-h-screen">
+          <div className="p-6">
+            {children}
+          </div>
+        </main>
+      </div>
+    </AuthGuard>
   )
 }

@@ -13,6 +13,10 @@ const Group = sequelize.define("group", {
     allowNull: false,
     unique: true,
   },
+  lastUsed: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
 });
 
 module.exports = Group;

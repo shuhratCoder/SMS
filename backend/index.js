@@ -23,7 +23,7 @@ async function start() {
     app.use("/groups",groupRouter)
     app.use("/messages",smsRouter)
     sequelize
-      .sync()
+      .sync({ alter: true })
       .then(() => console.log("DB synced"))
       .catch((err) => console.log(err));
 

@@ -1,19 +1,14 @@
 'use client'
 
-import { useEffect, useState ,useRef} from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
-  Search,
-  Plus,
-  Pencil,
-  Trash2,
-  ChevronLeft,
-  ChevronRight,
-  SlidersHorizontal
+  Search, Plus, Pencil, Trash2, ChevronLeft, ChevronRight, SlidersHorizontal
 } from 'lucide-react'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { getInitials } from '@/lib/utils'
 import { api } from '@/lib/api'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 const ITEMS_PER_PAGE = 8
 
@@ -23,22 +18,51 @@ const avatarColors = [
   'from-orange-500 to-yellow-500',
   'from-green-500 to-teal-500',
   'from-red-500 to-pink-500',
-  'from-indigo-500 to-purple-500'
+  'from-indigo-500 to-purple-500',
 ]
 
-export default function ContactsPage() {
+interface ContactForm {
+  fullName: string
+  phoneNumber: string
+  position: string
+}
+
+function formatUzPhone(input: string): string {
+  const digits = input.replace(/\D/g, '')
+  let d = digits
+  if (d.startsWith('998')) d = d.slice(3)
+  d = d.slice(0, 9)
+
+  let out = '+998'
+  if (d.length > 0) out += ' ' + d.slice(0, 2)
+  if (d.length > 2) out += ' ' + d.slice(2, 5)
+  if (d.length > 5) out += ' ' + d.slice(5, 7)
+  if (d.length > 7) out += ' ' + d.slice(7, 9)
+  return out
+}
+
+const PHONE_FULL_LENGTH = '+998 XX XXX XX XX'.length
+
+function ContactsPageInner() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [contacts, setContacts] = useState<any[]>([])
-  const [groups, setGroups] = useState<any[]>([])
-  const [editContact, setEditContact] = useState(null)
-  const [createOpen, setCreateOpen] = useState(false)
-  const [deleteContact, setDeleteContact] = useState(null)
-  const suppressAutoOpenRef=useRef(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [editContact, setEditContact] = useState<any | null>(null)
+  const [createOpen, setCreateOpen] = useState(false)
+  const [deleteContact, setDeleteContact] = useState<any | null>(null)
+  const [saving, setSaving] = useState(false)
+  const suppressAutoOpenRef = useRef(false)
+  const router = useRouter()
+  const searchParams = useSearchParams()
 
-  // 🔥 LOAD API
+  const [form, setForm] = useState<ContactForm>({
+    fullName: '',
+    phoneNumber: '',
+    position: '',
+  })
+
   const loadContacts = () => {
     setLoading(true)
     api.getContacts()
@@ -46,37 +70,126 @@ export default function ContactsPage() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
   }
-  const loadGroups = () => {
-    api.getGroups()
-      .then(setGroups)
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false))
-  }
+
   useEffect(() => {
     loadContacts()
-    loadGroups()
   }, [])
 
-  // 🔥 FILTER FIX
+  // URL params helpers
+  const clearQuery = () => {
+    const url = new URL(window.location.href)
+    url.searchParams.delete('contactModal')
+    url.searchParams.delete('id')
+    router.replace(url.pathname, { scroll: false })
+  }
+
+  const openCreate = () => {
+    suppressAutoOpenRef.current = false
+    setForm({ fullName: '', phoneNumber: '', position: '' })
+    setCreateOpen(true)
+    const url = new URL(window.location.href)
+    url.searchParams.set('contactModal', 'create')
+    url.searchParams.delete('id')
+    router.replace(url.pathname + '?' + url.searchParams.toString(), { scroll: false })
+  }
+
+  const openEdit = (c: any) => {
+    suppressAutoOpenRef.current = false
+    setEditContact(c)
+    setForm({
+      fullName: c.fullName || '',
+      phoneNumber: formatUzPhone(c.phoneNumber || ''),
+      position: c.position || '',
+    })
+    const url = new URL(window.location.href)
+    url.searchParams.set('contactModal', 'edit')
+    url.searchParams.set('id', c.id)
+    router.replace(url.pathname + '?' + url.searchParams.toString(), { scroll: false })
+  }
+
+  const closeForm = () => {
+    suppressAutoOpenRef.current = true
+    setCreateOpen(false)
+    setEditContact(null)
+    setForm({ fullName: '', phoneNumber: '', position: '' })
+    clearQuery()
+  }
+
+  const saveForm = async () => {
+    if (!form.fullName.trim() || !form.phoneNumber.trim()) return
+    const phoneDigits = form.phoneNumber.replace(/\D/g, '')
+    if (phoneDigits.length !== 12 || !phoneDigits.startsWith('998')) {
+      setError('Phone number must be in +998 XX XXX XX XX format')
+      return
+    }
+    setSaving(true)
+    try {
+      if (editContact) {
+        await api.updateContact(editContact.id, {
+          fullName: form.fullName.trim(),
+          phoneNumber: form.phoneNumber.trim(),
+          position: form.position.trim(),
+        })
+      } else {
+        await api.createContact({
+          fullName: form.fullName.trim(),
+          phoneNumber: form.phoneNumber.trim(),
+          position: form.position.trim(),
+        })
+      }
+      loadContacts()
+      closeForm()
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!deleteContact) return
+    setSaving(true)
+    try {
+      await api.deleteContact(deleteContact.id)
+      loadContacts()
+      setDeleteContact(null)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Auto-open modal based on URL params
+  useEffect(() => {
+    const modal = searchParams.get('contactModal')
+    const id = searchParams.get('id')
+    if (suppressAutoOpenRef.current) {
+      if (!modal) suppressAutoOpenRef.current = false
+      return
+    }
+    if (modal === 'create') {
+      if (!createOpen) openCreate()
+    } else if (modal === 'edit' && id) {
+      const c = contacts.find((c: any) => c.id === id || String(c.id) === id)
+      if (c && !editContact) openEdit(c)
+    } else {
+      if (createOpen || editContact) {
+        setCreateOpen(false)
+        setEditContact(null)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, contacts])
+
   const filtered = contacts.filter((c) =>
     (c.fullName || '').toLowerCase().includes(search.toLowerCase()) ||
     (c.phoneNumber || '').includes(search) ||
     (c.position || '').toLowerCase().includes(search.toLowerCase())
   )
 
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
-
-  const paginated = filtered.slice(
-    (page - 1) * ITEMS_PER_PAGE,
-    page * ITEMS_PER_PAGE
-  )
-
-  // 🔥 DELETE
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete contact?')) return
-    await api.deleteContact(id)
-    loadContacts()
-  }
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
+  const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
 
   return (
     <div className="space-y-5">
@@ -90,83 +203,239 @@ export default function ContactsPage() {
         </motion.h1>
       </div>
 
-      {/* SEARCH */}
-      <motion.div className="flex items-center gap-3">
-        <div className="flex-1 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08]">
-          <Search className="w-4 h-4 text-white/30" />
+      {/* Search + Add */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="flex items-center gap-3"
+      >
+        <div className="flex-1 flex items-center gap-2.5 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] backdrop-blur-sm focus-within:border-purple-500/40 focus-within:bg-white/[0.07] transition-all">
+          <Search className="w-4 h-4 text-white/30 flex-shrink-0" />
           <input
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(1)
-            }}
+            type="text"
             placeholder="Search contacts..."
-            className="flex-1 bg-transparent text-white outline-none"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+            className="flex-1 bg-transparent text-sm text-white/80 placeholder-white/25 outline-none"
           />
+          <SlidersHorizontal className="w-4 h-4 text-white/30" />
+          <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
         </div>
 
-        <button className="px-4 py-2.5 bg-purple-600 rounded-xl text-white">
-          <Plus /> Add Contact
+        <button
+          onClick={openCreate}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600/80 to-blue-600/80 border border-purple-500/30 text-white text-sm font-medium hover:shadow-glow-purple hover:-translate-y-0.5 transition-all"
+        >
+          <Plus className="w-4 h-4" />
+          Add Contact
         </button>
       </motion.div>
 
       {loading ? (
-        <div className="text-white">Loading...</div>
-      ) : error ? (
-        <div className="text-red-400">{error}</div>
+        <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] p-5 text-white/70">
+          Loading contacts...
+        </div>
+      ) : error && contacts.length === 0 ? (
+        <div className="rounded-2xl bg-rose-500/10 border border-rose-400/30 p-5 text-rose-200">
+          {error}
+        </div>
       ) : (
-        <GlassCard className="overflow-hidden">
-          {/* HEADER */}
-          <div className="grid grid-cols-[2fr_2fr_2fr_1.5fr] px-5 py-3 text-white/40">
-            <div>Full Name</div>
-            <div>Phone</div>
+        <GlassCard delay={0.2} className="overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+            <h2 className="text-white font-semibold">Contacts</h2>
+            <div className="flex items-center gap-2 text-xs text-white/40 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+              {filtered.length} contacts
+            </div>
+          </div>
+
+          <div className="grid grid-cols-[2fr_2fr_2fr_1.5fr] gap-4 px-5 py-3 text-xs text-white/40 border-b border-white/[0.04]">
+            <div className="flex items-center gap-1">Full Name</div>
+            <div>Phone Number</div>
             <div>Position</div>
             <div>Actions</div>
           </div>
 
-          {/* ROWS */}
-          {paginated.map((c, i) => (
-            <div
-              key={c.id}
-              className="grid grid-cols-[2fr_2fr_2fr_1.5fr] px-5 py-3 border-b border-white/10"
-            >
-              <div className="flex items-center gap-3">
+          <div>
+            {paginated.length === 0 ? (
+              <div className="py-16 text-center text-white/30 text-sm">
+                No contacts found
+              </div>
+            ) : (
+              paginated.map((contact, i) => (
                 <div
-                  className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarColors[i % 6]} flex items-center justify-center`}
+                  key={contact.id}
+                  className="grid grid-cols-[2fr_2fr_2fr_1.5fr] gap-4 px-5 py-3.5 items-center border-b border-white/[0.03] table-row-hover last:border-0"
                 >
-                  {getInitials(c.fullName)}
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarColors[i % avatarColors.length]} flex items-center justify-center text-xs font-bold text-white flex-shrink-0`}>
+                      {getInitials(contact.fullName)}
+                    </div>
+                    <span className="text-sm text-white/85 font-medium">{contact.fullName}</span>
+                  </div>
+
+                  <div className="text-sm text-white/70">{contact.phoneNumber}</div>
+                  <div className="text-sm text-white/65">{contact.position}</div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => openEdit(contact)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white/60 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:text-white/90 transition-all"
+                    >
+                      <Pencil className="w-3 h-3" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => setDeleteContact(contact)}
+                      className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-all"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
-                {c.fullName}
-              </div>
+              ))
+            )}
+          </div>
 
-              <div>{c.phoneNumber}</div>
-              <div>{c.position}</div>
-
-              <div className="flex gap-2">
-                <button>
-                  <Pencil />
-                </button>
-                <button onClick={() => handleDelete(c.id)}>
-                  <Trash2 />
-                </button>
-              </div>
-            </div>
-          ))}
-
-          {/* PAGINATION */}
-          <div className="flex justify-between px-5 py-3">
-            <button onClick={() => setPage((p) => p - 1)}>
-              <ChevronLeft />
+          {/* Pagination */}
+          <div className="flex items-center justify-between px-5 py-3 border-t border-white/[0.06]">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              Previous
             </button>
 
-            <span>{page}</span>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(totalPages, 4) }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPage(p)}
+                  className={`w-7 h-7 rounded-lg text-xs font-medium transition-all ${
+                    page === p
+                      ? 'bg-purple-500/30 border border-purple-500/50 text-purple-300'
+                      : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04]'
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
 
-            <button onClick={() => setPage((p) => p + 1)}>
-              <ChevronRight />
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              Next
+              <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </GlassCard>
       )}
+
+      {/* Create/Edit Contact Modal */}
+      {(createOpen || editContact) && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeForm} />
+          <div className="relative w-full max-w-xl rounded-2xl bg-bg-secondary/95 backdrop-blur-2xl border border-white/10 shadow-glass-lg overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+              <div className="text-lg font-semibold text-white">
+                {editContact ? 'Edit Contact' : 'Add Contact'}
+              </div>
+            </div>
+            <div className="px-5 py-4 grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className="block text-sm text-white/70 mb-1">Full name *</label>
+                <input
+                  type="text"
+                  value={form.fullName}
+                  onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/85 placeholder-white/25 outline-none focus:border-purple-500/40 focus:bg-white/[0.07] transition-all"
+                  placeholder="John Doe"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-white/70 mb-1">Phone *</label>
+                <input
+                  type="tel"
+                  value={form.phoneNumber}
+                  onFocus={(e) => {
+                    if (!e.target.value) setForm((f) => ({ ...f, phoneNumber: '+998 ' }))
+                  }}
+                  onChange={(e) => setForm((f) => ({ ...f, phoneNumber: formatUzPhone(e.target.value) }))}
+                  maxLength={PHONE_FULL_LENGTH}
+                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/85 placeholder-white/25 outline-none focus:border-purple-500/40 focus:bg-white/[0.07] transition-all"
+                  placeholder="+998 XX XXX XX XX"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-white/70 mb-1">Position</label>
+                <input
+                  type="text"
+                  value={form.position}
+                  onChange={(e) => setForm((f) => ({ ...f, position: e.target.value }))}
+                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/85 placeholder-white/25 outline-none focus:border-purple-500/40 focus:bg-white/[0.07] transition-all"
+                  placeholder="Manager"
+                />
+              </div>
+            </div>
+            <div className="px-5 py-4 border-t border-white/[0.06] flex items-center justify-end gap-2">
+              <button
+                onClick={closeForm}
+                className="px-4 py-2.5 rounded-xl text-sm text-white/60 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveForm}
+                disabled={saving}
+                className="px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-purple-600/80 to-blue-600/80 border border-purple-500/30 hover:shadow-glow-purple transition-all disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirm Modal */}
+      {deleteContact && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDeleteContact(null)} />
+          <div className="relative w-full max-w-md rounded-2xl bg-bg-secondary/95 backdrop-blur-2xl border border-white/10 shadow-glass-lg overflow-hidden">
+            <div className="px-5 py-4 border-b border-white/[0.06] text-lg font-semibold text-white">Delete Contact</div>
+            <div className="px-5 py-4 text-sm text-white/70">
+              Are you sure you want to delete contact &quot;{deleteContact.fullName}&quot;?
+            </div>
+            <div className="px-5 py-4 border-t border-white/[0.06] flex items-center justify-end gap-2">
+              <button
+                onClick={() => setDeleteContact(null)}
+                className="px-4 py-2.5 rounded-xl text-sm text-white/60 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={saving}
+                className="px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-pink-600/80 to-red-600/80 border border-pink-500/30 hover:shadow-glow-purple transition-all disabled:opacity-50"
+              >
+                {saving ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  )
+}
+
+export default function ContactsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ContactsPageInner />
+    </Suspense>
   )
 }

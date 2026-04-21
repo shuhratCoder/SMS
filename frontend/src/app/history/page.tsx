@@ -1,22 +1,20 @@
 'use client'
 
-import { useState,useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
-  Search, Pencil, Trash2, ChevronLeft, ChevronRight,
+  Search, ChevronLeft, ChevronRight,
   SlidersHorizontal, Download
 } from 'lucide-react'
 import { GlassCard } from '@/components/ui/GlassCard'
-import { api } from "@/lib/api";
+import { api } from "@/lib/api"
 import { cn, getInitials } from '@/lib/utils'
-import { log } from 'console'
 
-// Конфиг статусов
-const statusConfig: Record<string, { label: string; className: string }> = {
-  sent:      { label: 'Sent',      className: 'badge-sent' },
-  delivered: { label: 'Delivered', className: 'badge-delivered' },
-  failed:    { label: 'Failed',    className: 'badge-failed' },
-  pending:   { label: 'Pending',   className: 'badge-pending' },
+const statusConfig: Record<string, { label: string; className: string; icon: string }> = {
+  sent:      { label: 'Sent',      className: 'badge-sent',      icon: '✓' },
+  delivered: { label: 'Delivered', className: 'badge-delivered', icon: '✓✓' },
+  failed:    { label: 'Failed',    className: 'badge-failed',    icon: '✗' },
+  pending:   { label: 'Pending',   className: 'badge-pending',   icon: '⏳' },
 }
 
 const avatarColors = [
@@ -30,32 +28,65 @@ const avatarColors = [
 
 const ITEMS_PER_PAGE = 6
 
+function formatTime(date: string) {
+  const d = new Date(date)
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const year = d.getFullYear()
+  const hours = String(d.getHours()).padStart(2, '0')
+  const minutes = String(d.getMinutes()).padStart(2, '0')
+  return `${day}.${month}.${year}, ${hours}:${minutes}`
+}
+
+function getRecipient(sms: any) {
+  const names = [
+    ...(sms.contacts?.map((c: any) => c.fullName) || []),
+    ...(sms.groups?.map((g: any) => g.groupName) || [])
+  ]
+  return names.length ? names.join(', ') : 'No recipient'
+}
+
+function exportToCSV(data: any[]) {
+  const headers = ['Recipient', 'Message', 'Status', 'Sent At']
+  const rows = data.map((sms) => [
+    getRecipient(sms),
+    `"${(sms.message || '').replace(/"/g, '""')}"`,
+    sms.status || 'sent',
+    sms.createdAt ? formatTime(sms.createdAt) : '',
+  ])
+
+  const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `sms-history-${new Date().toISOString().slice(0, 10)}.csv`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
 export default function HistoryPage() {
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [page, setPage] = useState(1)
-  const [smsHistory, setSmsHistory] = useState<any[]>([]);
-  // Фильтрация по поиску и статусу
-  
-   // 🔥 API
-    useEffect(() => {
-      api.getSmsHistory().then(setSmsHistory);
-    }, []);
-  
-    // 🔥 recipient function (ENG MUHIM FIX)
-  const getRecipient = (sms: any) => {
-  const names = [
-    ...(sms.contacts?.map((c: any) => c.fullName) || []),
-    ...(sms.groups?.map((g: any) => g.groupName) || [])
-  ];
-  return names.length ? names.join(", ") : "No recipient";
-};
+  const [smsHistory, setSmsHistory] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    api.getSmsHistory()
+      .then(setSmsHistory)
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
 
   const filtered = smsHistory.filter((s) => {
-    const recipient = getRecipient(s);
+    const recipient = getRecipient(s)
     const matchSearch =
       recipient.toLowerCase().includes(search.toLowerCase()) ||
-      s.message.toLowerCase().includes(search.toLowerCase())
+      (s.message || '').toLowerCase().includes(search.toLowerCase())
     const matchStatus = filterStatus === 'all' || s.status === filterStatus
     return matchSearch && matchStatus
   })
@@ -65,7 +96,6 @@ export default function HistoryPage() {
 
   return (
     <div className="space-y-5">
-      {/* Заголовок */}
       <motion.h1
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
@@ -74,7 +104,7 @@ export default function HistoryPage() {
         SMS History
       </motion.h1>
 
-      {/* Строка поиска + кнопка */}
+      {/* Search */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -85,22 +115,16 @@ export default function HistoryPage() {
           <Search className="w-4 h-4 text-white/30 flex-shrink-0" />
           <input
             type="text"
-            placeholder="Search messages..."
+            placeholder="Search by recipient or message..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1) }}
             className="flex-1 bg-transparent text-sm text-white/80 placeholder-white/25 outline-none"
           />
           <SlidersHorizontal className="w-4 h-4 text-white/30" />
-          <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
         </div>
-
-        <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600/80 to-blue-600/80 border border-purple-500/30 text-white text-sm font-medium hover:shadow-glow-purple hover:-translate-y-0.5 transition-all">
-          <Search className="w-4 h-4" />
-          Search messages...
-        </button>
       </motion.div>
 
-      {/* Фильтр по статусу */}
+      {/* Status filter */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -123,65 +147,52 @@ export default function HistoryPage() {
         ))}
       </motion.div>
 
-      {/* Таблица */}
+      {/* Table */}
       <GlassCard delay={0.2} className="overflow-hidden">
-        {/* Шапка таблицы */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
           <h2 className="text-white font-semibold">SMS History</h2>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 text-xs text-white/40 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-              <span>Sent At</span>
-              <ChevronLeft className="w-3 h-3" />
-              <ChevronLeft className="w-3 h-3 -ml-2" />
+            <div className="text-xs text-white/40 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+              {filtered.length} messages
             </div>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-white/50 bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] hover:text-white/80 transition-all">
+            <button
+              onClick={() => exportToCSV(filtered)}
+              disabled={filtered.length === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-white/50 bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] hover:text-white/80 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            >
               <Download className="w-3 h-3" />
               Export
             </button>
           </div>
         </div>
 
-        {/* Заголовки колонок */}
-        <div className="grid grid-cols-[2fr_3fr_1.2fr_1.5fr_1.5fr] gap-4 px-5 py-3 text-xs text-white/40 border-b border-white/[0.04]">
+        {/* Column headers (no Actions) */}
+        <div className="grid grid-cols-[2fr_3fr_1.2fr_1.5fr] gap-4 px-5 py-3 text-xs text-white/40 border-b border-white/[0.04]">
           <div>Recipient</div>
           <div>Message Summary</div>
           <div>Status</div>
           <div>Sent At</div>
-          <div>Actions</div>
         </div>
 
-        {/* Строки данных */}
+        {/* Rows */}
         <div>
-          {paginated.length === 0 ? (
+          {loading ? (
+            <div className="py-16 text-center text-white/30 text-sm">
+              Loading...
+            </div>
+          ) : paginated.length === 0 ? (
             <div className="py-16 text-center text-white/30 text-sm">
               No messages found
             </div>
           ) : (
             paginated.map((sms, i) => {
-
-              const formatTime = (date: string) => {
-                    const d = new Date(date)
-
-                    const day = String(d.getDate()).padStart(2, "0")
-                    const month = String(d.getMonth() + 1).padStart(2, "0")
-                    const year = d.getFullYear()
-
-                    const hours = String(d.getHours()).padStart(2, "0")
-                    const minutes = String(d.getMinutes()).padStart(2, "0")
-
-                    return `${day}.${month}.${year}, ${hours}:${minutes}`
-                  }
-              const recipient = getRecipient(sms) 
+              const recipient = getRecipient(sms)
               const status = statusConfig[sms.status] || statusConfig.sent
               return (
-                <motion.div
+                <div
                   key={sms.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.25 + i * 0.05 }}
-                  className="grid grid-cols-[2fr_3fr_1.2fr_1.5fr_1.5fr] gap-4 px-5 py-3.5 items-center border-b border-white/[0.03] table-row-hover last:border-0"
+                  className="grid grid-cols-[2fr_3fr_1.2fr_1.5fr] gap-4 px-5 py-3.5 items-center border-b border-white/[0.03] table-row-hover last:border-0"
                 >
-                  {/* Получатель */}
                   <div className="flex items-center gap-2.5">
                     <div className={cn(
                       'w-7 h-7 rounded-full bg-gradient-to-br flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0',
@@ -192,38 +203,24 @@ export default function HistoryPage() {
                     <span className="text-sm text-white/85 truncate font-medium">{recipient}</span>
                   </div>
 
-                  {/* Текст сообщения */}
                   <span className="text-sm text-white/50 truncate">{sms.message}</span>
 
-                  {/* Статус */}
                   <span className={cn(
                     'text-xs font-medium px-2.5 py-1 rounded-full inline-flex items-center gap-1 w-fit',
                     status.className
                   )}>
-                    <span>✓</span>
+                    <span>{status.icon}</span>
                     {status.label}
                   </span>
 
-                  {/* Время */}
-                  <span className="text-sm text-white/45">{formatTime(sms.createdAt)}</span>
-
-                  {/* Кнопки */}
-                  <div className="flex items-center gap-2">
-                    <button className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-white/60 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:text-white/90 transition-all">
-                      <Pencil className="w-3 h-3" />
-                      Edit
-                    </button>
-                    <button className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 hover:bg-red-500/20 transition-all">
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </motion.div>
+                  <span className="text-sm text-white/45">{sms.createdAt ? formatTime(sms.createdAt) : '—'}</span>
+                </div>
               )
             })
           )}
         </div>
 
-        {/* Пагинация */}
+        {/* Pagination */}
         <div className="flex items-center justify-between px-5 py-3 border-t border-white/[0.06]">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
