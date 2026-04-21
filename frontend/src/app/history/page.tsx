@@ -166,12 +166,14 @@ export default function HistoryPage() {
           </div>
         </div>
 
-        {/* Column headers (no Actions) */}
-        <div className="grid grid-cols-[2fr_3fr_1.2fr_1.5fr] gap-4 px-5 py-3 text-xs text-white/40 border-b border-white/[0.04]">
-          <div>Recipient</div>
-          <div>Message Summary</div>
-          <div>Status</div>
-          <div>Sent At</div>
+        {/* Column headers */}
+        <div className="flex items-center px-5 py-3 text-xs text-white/40 border-b border-white/[0.04]">
+          <div style={{ width: '50%' }} className="pr-2">Recipient</div>
+          <div className="flex items-center gap-2" style={{ width: '50%' }}>
+            <div style={{ width: '50%' }}>Message Summary</div>
+            <div style={{ width: '20%' }}>Status</div>
+            <div style={{ width: '30%' }}>Sent At</div>
+          </div>
         </div>
 
         {/* Rows */}
@@ -191,9 +193,9 @@ export default function HistoryPage() {
               return (
                 <div
                   key={sms.id}
-                  className="grid grid-cols-[2fr_3fr_1.2fr_1.5fr] gap-4 px-5 py-3.5 items-center border-b border-white/[0.03] table-row-hover last:border-0"
+                  className="flex items-center px-5 py-3.5 border-b border-white/[0.03] table-row-hover last:border-0"
                 >
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2.5 pr-2 min-w-0" style={{ width: '50%' }}>
                     <div className={cn(
                       'w-7 h-7 rounded-full bg-gradient-to-br flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0',
                       avatarColors[i % avatarColors.length]
@@ -203,17 +205,23 @@ export default function HistoryPage() {
                     <span className="text-sm text-white/85 truncate font-medium">{recipient}</span>
                   </div>
 
-                  <span className="text-sm text-white/50 truncate">{sms.message}</span>
+                  <div className="flex items-center gap-2 min-w-0" style={{ width: '50%' }}>
+                    <span className="text-sm text-white/50 truncate" style={{ width: '50%' }}>{sms.message}</span>
 
-                  <span className={cn(
-                    'text-xs font-medium px-2.5 py-1 rounded-full inline-flex items-center gap-1 w-fit',
-                    status.className
-                  )}>
-                    <span>{status.icon}</span>
-                    {status.label}
-                  </span>
+                    <div style={{ width: '20%' }}>
+                      <span className={cn(
+                        'text-xs font-medium px-2.5 py-1 rounded-full inline-flex items-center gap-1 w-fit',
+                        status.className
+                      )}>
+                        <span>{status.icon}</span>
+                        {status.label}
+                      </span>
+                    </div>
 
-                  <span className="text-sm text-white/45">{sms.createdAt ? formatTime(sms.createdAt) : '—'}</span>
+                    <span className="text-sm text-white/45 truncate" style={{ width: '30%' }}>
+                      {sms.createdAt ? formatTime(sms.createdAt) : '—'}
+                    </span>
+                  </div>
                 </div>
               )
             })
