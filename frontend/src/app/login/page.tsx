@@ -55,7 +55,7 @@ export default function LoginPage() {
       if (!result.token) {
         throw new Error('Token topilmadi')
       }
-      localStorage.setItem('token', result.token)
+      sessionStorage.setItem('token', result.token)
       router.push('/dashboard')
     } catch (err) {
       console.error(err)

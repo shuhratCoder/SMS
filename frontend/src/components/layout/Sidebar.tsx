@@ -118,6 +118,7 @@ export function Sidebar() {
                 className="text-white/30 hover:text-white/70 transition-colors"
                 onClick={() => {
                   if (label === 'Logout') {
+                    sessionStorage.removeItem('token')
                     localStorage.removeItem('token')
                     api.clearCache()
                     router.push('/login')

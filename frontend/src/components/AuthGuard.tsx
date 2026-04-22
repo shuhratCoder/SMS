@@ -9,8 +9,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [checked, setChecked] = useState(false)
 
   useEffect(() => {
-    const token = localStorage.getItem('token')
+    const token = sessionStorage.getItem('token')
     if (!token) {
+      localStorage.removeItem('token')
       router.replace('/login')
     } else {
       setChecked(true)

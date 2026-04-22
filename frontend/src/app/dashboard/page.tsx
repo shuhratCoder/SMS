@@ -56,6 +56,7 @@ export default function DashboardPage() {
   const router = useRouter()
   const [contactsCount, setContactsCount] = useState<number>(0)
   const [groupsCount, setGroupsCount] = useState<number>(0)
+  const [groupsAll, setGroupsAll] = useState<any[]>([])
   const [smsHistoryAll, setSmsHistoryAll] = useState<any[]>([])
   const [loadingStats, setLoadingStats] = useState(true)
   const [statsError, setStatsError] = useState('')
@@ -70,6 +71,7 @@ export default function DashboardPage() {
         if (!isMounted) return
         setContactsCount(Array.isArray(contacts) ? contacts.length : 0)
         setGroupsCount(Array.isArray(groups) ? groups.length : 0)
+        setGroupsAll(Array.isArray(groups) ? groups : [])
         setSmsHistoryAll(Array.isArray(smsHistory) ? smsHistory : [])
       })
       .catch((err) => {
@@ -139,6 +141,11 @@ export default function DashboardPage() {
 
   // Top groups by SMS count
   const topGroupsData = useMemo(() => {
+    const membersById = new Map<string, number>()
+    for (const g of groupsAll) {
+      membersById.set(String(g.id), (g.contacts || []).length)
+    }
+
     const counts = new Map<string, { name: string; mentions: number; members: number; lastActivity: string | null }>()
     for (const sms of smsHistoryAll) {
       for (const g of sms.groups || []) {
@@ -146,7 +153,7 @@ export default function DashboardPage() {
         const prev = counts.get(key) || {
           name: g.groupName,
           mentions: 0,
-          members: (g.contacts || []).length,
+          members: membersById.get(key) ?? (g.contacts || []).length,
           lastActivity: null as string | null,
         }
         prev.mentions += 1
@@ -159,7 +166,7 @@ export default function DashboardPage() {
     return Array.from(counts.values())
       .sort((a, b) => b.mentions - a.mentions)
       .slice(0, 5)
-  }, [smsHistoryAll])
+  }, [smsHistoryAll, groupsAll])
 
   // Recent SMS activity
   const recentActivity = useMemo(() => {
