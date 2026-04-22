@@ -11,6 +11,7 @@ import { GlassCard, StatCard } from '@/components/ui/GlassCard'
 import { SmsOverviewChart, DeliveryPieChart, OverviewChartPoint } from '@/components/charts/SmsCharts'
 import { cn } from '@/lib/utils'
 import { api } from '@/lib/api'
+import { useTranslation } from '@/lib/i18n'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -54,8 +55,10 @@ function formatDateTime(iso: string) {
 
 export default function DashboardPage() {
   const router = useRouter()
+  const { t } = useTranslation()
   const [contactsCount, setContactsCount] = useState<number>(0)
   const [groupsCount, setGroupsCount] = useState<number>(0)
+  const [groupsAll, setGroupsAll] = useState<any[]>([])
   const [smsHistoryAll, setSmsHistoryAll] = useState<any[]>([])
   const [loadingStats, setLoadingStats] = useState(true)
   const [statsError, setStatsError] = useState('')
@@ -70,6 +73,7 @@ export default function DashboardPage() {
         if (!isMounted) return
         setContactsCount(Array.isArray(contacts) ? contacts.length : 0)
         setGroupsCount(Array.isArray(groups) ? groups.length : 0)
+        setGroupsAll(Array.isArray(groups) ? groups : [])
         setSmsHistoryAll(Array.isArray(smsHistory) ? smsHistory : [])
       })
       .catch((err) => {
@@ -139,6 +143,11 @@ export default function DashboardPage() {
 
   // Top groups by SMS count
   const topGroupsData = useMemo(() => {
+    const membersById = new Map<string, number>()
+    for (const g of groupsAll) {
+      membersById.set(String(g.id), (g.contacts || []).length)
+    }
+
     const counts = new Map<string, { name: string; mentions: number; members: number; lastActivity: string | null }>()
     for (const sms of smsHistoryAll) {
       for (const g of sms.groups || []) {
@@ -146,7 +155,7 @@ export default function DashboardPage() {
         const prev = counts.get(key) || {
           name: g.groupName,
           mentions: 0,
-          members: (g.contacts || []).length,
+          members: membersById.get(key) ?? (g.contacts || []).length,
           lastActivity: null as string | null,
         }
         prev.mentions += 1
@@ -159,7 +168,7 @@ export default function DashboardPage() {
     return Array.from(counts.values())
       .sort((a, b) => b.mentions - a.mentions)
       .slice(0, 5)
-  }, [smsHistoryAll])
+  }, [smsHistoryAll, groupsAll])
 
   // Recent SMS activity
   const recentActivity = useMemo(() => {
@@ -177,7 +186,7 @@ export default function DashboardPage() {
 
   const stats = [
     {
-      title: 'Total Contacts',
+      title: t('dashboard.stats.totalContacts'),
       value: loadingStats ? '...' : contactsCount,
       icon: <Users className="w-5 h-5 text-purple-400" />,
       gradient: 'from-purple-500/20 to-purple-500/5',
@@ -185,7 +194,7 @@ export default function DashboardPage() {
       href: '/contacts',
     },
     {
-      title: 'Active Groups',
+      title: t('dashboard.stats.activeGroups'),
       value: loadingStats ? '...' : groupsCount,
       icon: <UsersRound className="w-5 h-5 text-blue-400" />,
       gradient: 'from-blue-500/20 to-blue-500/5',
@@ -193,7 +202,7 @@ export default function DashboardPage() {
       href: '/groups',
     },
     {
-      title: 'SMS Sent Today',
+      title: t('dashboard.stats.smsSentToday'),
       value: loadingStats ? '...' : smsHistoryToday,
       icon: <Send className="w-5 h-5 text-cyan-400" />,
       gradient: 'from-cyan-500/20 to-cyan-500/5',
@@ -201,7 +210,7 @@ export default function DashboardPage() {
       href: '/history',
     },
     {
-      title: 'SMS Sent This Month',
+      title: t('dashboard.stats.smsSentThisMonth'),
       value: loadingStats ? '...' : smsHistoryMonth,
       icon: <MessageSquare className="w-5 h-5 text-pink-400" />,
       gradient: 'from-pink-500/20 to-pink-500/5',
@@ -209,7 +218,7 @@ export default function DashboardPage() {
       href: '/history',
     },
     {
-      title: 'Delivery Rate',
+      title: t('dashboard.stats.deliveryRate'),
       value: loadingStats ? '...' : `${deliveryRate}%`,
       icon: <Heart className="w-5 h-5 text-red-400" />,
       gradient: 'from-red-500/20 to-red-500/5',
@@ -225,7 +234,7 @@ export default function DashboardPage() {
         animate={{ opacity: 1, x: 0 }}
         className="text-2xl font-bold text-white font-display"
       >
-        Dashboard
+        {t('dashboard.title')}
       </motion.h1>
 
       <div className="grid grid-cols-5 gap-4">
@@ -264,8 +273,8 @@ export default function DashboardPage() {
         <GlassCard delay={0.3} className="col-span-2 p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-white font-semibold">SMS Overview</h2>
-              <p className="text-white/40 text-xs mt-0.5">Last 7 days</p>
+              <h2 className="text-white font-semibold">{t('dashboard.overview.title')}</h2>
+              <p className="text-white/40 text-xs mt-0.5">{t('dashboard.overview.subtitle')}</p>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs text-white/50">
               <span>
@@ -280,17 +289,17 @@ export default function DashboardPage() {
               <SmsOverviewChart data={overviewData} />
             </div>
             <div>
-              <p className="text-white/70 text-sm font-medium mb-2">Delivery Reports</p>
+              <p className="text-white/70 text-sm font-medium mb-2">{t('dashboard.delivery.title')}</p>
               <DeliveryPieChart rate={deliveryRate} />
               <div className="space-y-1.5 mt-2">
                 <div className="flex items-center gap-2 text-xs">
                   <div className="w-2 h-2 rounded-full bg-cyan-400" />
-                  <span className="text-white/60">Sent</span>
+                  <span className="text-white/60">{t('dashboard.delivery.sent')}</span>
                   <span className="text-white ml-auto font-medium">{deliveryRate}%</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
                   <div className="w-2 h-2 rounded-full bg-red-400" />
-                  <span className="text-white/60">Failed</span>
+                  <span className="text-white/60">{t('dashboard.delivery.failed')}</span>
                   <span className="text-white ml-auto font-medium">{failedRate}%</span>
                 </div>
               </div>
@@ -300,23 +309,23 @@ export default function DashboardPage() {
 
         {/* Quick Actions — corrected links */}
         <GlassCard delay={0.35} className="p-5">
-          <h2 className="text-white font-semibold mb-4">Quick Actions</h2>
+          <h2 className="text-white font-semibold mb-4">{t('dashboard.quickActions.title')}</h2>
           <div className="space-y-3">
             {[
               {
-                label: 'Add Contact',
+                label: t('dashboard.quickActions.addContact'),
                 icon: <UserPlus className="w-4 h-4" />,
                 href: '/contacts?contactModal=create',
                 gradient: 'from-blue-500 to-cyan-500',
               },
               {
-                label: 'Create Group',
+                label: t('dashboard.quickActions.createGroup'),
                 icon: <UsersRound className="w-4 h-4" />,
                 href: '/groups?groupModal=create',
                 gradient: 'from-purple-500 to-pink-500',
               },
               {
-                label: 'Send SMS',
+                label: t('dashboard.quickActions.sendSms'),
                 icon: <Send className="w-4 h-4" />,
                 href: '/send-sms',
                 gradient: 'from-blue-500 to-purple-500',
@@ -343,27 +352,27 @@ export default function DashboardPage() {
       <div className="grid grid-cols-3 gap-4">
         <GlassCard delay={0.4} className="col-span-2 p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-white font-semibold">Recent SMS Activity</h2>
+            <h2 className="text-white font-semibold">{t('dashboard.recentActivity.title')}</h2>
             <Link
               href="/history"
               className="flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 transition-colors px-3 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/20"
             >
-              View All
+              {t('dashboard.recentActivity.viewAll')}
               <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
 
           <div className="grid grid-cols-[3fr_1fr_1fr_1.5fr] gap-4 px-3 py-2 text-xs text-white/40 border-b border-white/[0.06]">
-            <span>Message</span>
-            <span>Recipients</span>
-            <span>Status</span>
-            <span>Sent At</span>
+            <span>{t('dashboard.table.message')}</span>
+            <span>{t('dashboard.table.recipients')}</span>
+            <span>{t('dashboard.table.status')}</span>
+            <span>{t('dashboard.table.sentAt')}</span>
           </div>
 
           <div className="space-y-1 mt-1">
             {recentActivity.length === 0 ? (
               <div className="py-10 text-center text-white/30 text-sm">
-                {loadingStats ? 'Loading...' : 'No recent SMS'}
+                {loadingStats ? t('common.loading') : t('dashboard.recentActivity.empty')}
               </div>
             ) : (
               recentActivity.map((activity) => {
@@ -394,7 +403,7 @@ export default function DashboardPage() {
 
         <GlassCard delay={0.45} className="p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-white font-semibold">Top Groups</h2>
+            <h2 className="text-white font-semibold">{t('dashboard.topGroups.title')}</h2>
             <Link
               href="/groups"> <Users className="w-4 h-4 text-white/30" /> </Link>
           </div>
@@ -402,7 +411,7 @@ export default function DashboardPage() {
           <div className="space-y-3">
             {topGroupsData.length === 0 ? (
               <div className="py-6 text-center text-white/30 text-sm">
-                {loadingStats ? 'Loading...' : 'No group activity yet'}
+                {loadingStats ? t('common.loading') : t('dashboard.topGroups.empty')}
               </div>
             ) : (
               topGroupsData.map((group, i) => (
@@ -413,11 +422,11 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-semibold text-white truncate">{group.name}</p>
                     <span className="text-xs text-white/30 whitespace-nowrap ml-2">
-                      {group.mentions} SMS
+                      {group.mentions} {t('dashboard.topGroups.sms')}
                     </span>
                   </div>
                   <div className="flex items-center justify-between mt-1">
-                    <p className="text-xs text-white/40">{group.members} Members</p>
+                    <p className="text-xs text-white/40">{group.members} {t('dashboard.topGroups.members')}</p>
                     <span className="text-xs text-white/30">
                       {group.lastActivity ? formatDateTime(group.lastActivity) : '—'}
                     </span>

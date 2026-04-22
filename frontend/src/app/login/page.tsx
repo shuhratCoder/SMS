@@ -4,47 +4,18 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Mail, Lock, Eye, EyeOff, Box } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-
-// Тексты для разных языков
-const translations = {
-  uz: {
-    subtitle: 'Admin Panel',
-    usernamePlaceholder: 'Username',
-    passwordPlaceholder: 'Parol',
-    loginBtn: 'Kirish',
-    forgotPassword: 'Parolni unutdingizmi?',
-  },
-  ru: {
-    subtitle: 'Панель Администратора',
-    usernamePlaceholder: 'Имя пользователя',
-    passwordPlaceholder: 'Пароль',
-    loginBtn: 'Войти',
-    forgotPassword: 'Забыли пароль?',
-  },
-  en: {
-    subtitle: 'Admin Panel',
-    usernamePlaceholder: 'Username',
-    passwordPlaceholder: 'Password',
-    loginBtn: 'Login',
-    forgotPassword: 'Forgot password?',
-  },
-}
-
 import { api } from '@/lib/api'
-
-type Lang = 'uz' | 'ru' | 'en'
+import { Lang, useTranslation } from '@/lib/i18n'
 
 export default function LoginPage() {
   const router = useRouter()
-  const [lang, setLang] = useState<Lang>('uz')
+  const { lang, setLang, t } = useTranslation()
   const [showPassword, setShowPassword] = useState(false)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [focused, setFocused] = useState<string | null>(null)
-
-  const t = translations[lang]
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -55,7 +26,7 @@ export default function LoginPage() {
       if (!result.token) {
         throw new Error('Token topilmadi')
       }
-      localStorage.setItem('token', result.token)
+      sessionStorage.setItem('token', result.token)
       router.push('/dashboard')
     } catch (err) {
       console.error(err)
@@ -102,7 +73,7 @@ export default function LoginPage() {
                   SMS B<span className="text-purple-400">roa</span>DCAST
                 </h1>
               </div>
-              <p className="text-white/40 text-sm ml-[52px]">{t.subtitle}</p>
+              <p className="text-white/40 text-sm ml-[52px]">{t('login.subtitle')}</p>
             </motion.div>
 
             {/* Форма */}
@@ -124,7 +95,7 @@ export default function LoginPage() {
                 <Mail className={`w-4 h-4 flex-shrink-0 transition-colors ${focused === 'username' ? 'text-purple-400' : 'text-white/30'}`} />
                 <input
                   type="text"
-                  placeholder={t.usernamePlaceholder}
+                  placeholder={t('login.username.placeholder')}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   onFocus={() => setFocused('username')}
@@ -151,7 +122,7 @@ export default function LoginPage() {
                 <Lock className={`w-4 h-4 flex-shrink-0 transition-colors ${focused === 'password' ? 'text-purple-400' : 'text-white/30'}`} />
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder={t.passwordPlaceholder}
+                  placeholder={t('login.password.placeholder')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onFocus={() => setFocused('password')}
@@ -198,10 +169,10 @@ export default function LoginPage() {
                   {isLoading ? (
                     <span className="flex items-center justify-center gap-2">
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Loading...</span>
+                      <span>{t('login.button.loading')}</span>
                     </span>
                   ) : (
-                    t.loginBtn
+                    t('login.button')
                   )}
                   {/* Блик на кнопке */}
                   <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 opacity-0 hover:opacity-100 transition-opacity" />
@@ -221,7 +192,7 @@ export default function LoginPage() {
                 transition={{ delay: 0.45 }}
                 className="text-center text-white/35 text-sm hover:text-white/60 cursor-pointer transition-colors"
               >
-                {t.forgotPassword}
+                {t('login.forgotPassword')}
               </motion.p>
             </form>
 

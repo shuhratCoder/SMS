@@ -17,27 +17,26 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { api } from '@/lib/api'
-
-// Навигационные пункты
-const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/contacts', label: 'Contacts', icon: Users },
-  { href: '/groups', label: 'Groups', icon: UsersRound },
-  { href: '/send-sms', label: 'Send SMS', icon: Send },
-  { href: '/history', label: 'SMS History', icon: History },
-  { href: '/settings', label: 'Settings', icon: Settings },
-]
-
-// Нижние иконки (уведомления, профиль и т.д.)
-const bottomItems = [
-  // { icon: Bell, label: 'Notifications' },
-  { icon: UserCircle, label: 'Profile' },
-  { icon: LogOut, label: 'Logout' },
-]
+import { useTranslation } from '@/lib/i18n'
 
 export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
+  const { t } = useTranslation()
+
+  const navItems = [
+    { href: '/dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
+    { href: '/contacts', label: t('nav.contacts'), icon: Users },
+    { href: '/groups', label: t('nav.groups'), icon: UsersRound },
+    { href: '/send-sms', label: t('nav.sendSms'), icon: Send },
+    { href: '/history', label: t('nav.history'), icon: History },
+    { href: '/settings', label: t('nav.settings'), icon: Settings },
+  ]
+
+  const bottomItems = [
+    { icon: UserCircle, label: t('nav.profile'), key: 'Profile' as const },
+    { icon: LogOut, label: t('nav.logout'), key: 'Logout' as const },
+  ]
 
   return (
     <motion.aside
@@ -111,13 +110,14 @@ export function Sidebar() {
         {/* Нижние иконки */}
         <div className="px-5 py-4 border-t border-white/[0.06]">
           <div className="flex items-center gap-4">
-            {bottomItems.map(({ icon: Icon, label }) => (
+            {bottomItems.map(({ icon: Icon, label, key }) => (
               <button
-                key={label}
+                key={key}
                 title={label}
                 className="text-white/30 hover:text-white/70 transition-colors"
                 onClick={() => {
-                  if (label === 'Logout') {
+                  if (key === 'Logout') {
+                    sessionStorage.removeItem('token')
                     localStorage.removeItem('token')
                     api.clearCache()
                     router.push('/login')

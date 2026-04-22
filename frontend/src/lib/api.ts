@@ -3,7 +3,7 @@ const API_BASE_URL =
 
 async function doFetch(path: string, options: RequestInit = {}) {
   const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    typeof window !== "undefined" ? sessionStorage.getItem("token") : null;
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",

@@ -5,11 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Search, Plus, Pencil, ChevronLeft, ChevronRight, Users, SlidersHorizontal, Trash2, X, UserPlus, UserCheck, CheckSquare, Square } from 'lucide-react'
 import { GlassCard } from '@/components/ui/GlassCard'
 import { api } from '@/lib/api'
+import { useTranslation } from '@/lib/i18n'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 const ITEMS_PER_PAGE = 6
 
 function GroupsPageInner() {
+  const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [showManageTooltip, setShowManageTooltip] = useState<string | null>(null)
@@ -226,7 +228,7 @@ console.log("groups",groups)
         animate={{ opacity: 1, x: 0 }}
         className="text-2xl font-bold text-white font-display"
       >
-        Groups
+        {t('groups.title')}
       </motion.h1>
 
       {/* Search + Create */}
@@ -240,7 +242,7 @@ console.log("groups",groups)
           <Search className="w-4 h-4 text-white/30" />
           <input
             type="text"
-            placeholder="Search groups..."
+            placeholder={t('groups.search.placeholder')}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1) }}
             className="flex-1 bg-transparent text-sm text-white/80 placeholder-white/25 outline-none"
@@ -254,13 +256,13 @@ console.log("groups",groups)
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600/80 to-blue-600/80 border border-purple-500/30 text-white text-sm font-medium hover:shadow-glow-purple hover:-translate-y-0.5 transition-all"
         >
           <Plus className="w-4 h-4" />
-          Create Group
+          {t('groups.button.create')}
         </button>
       </motion.div>
 
       {loading ? (
         <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] p-5 text-white/70">
-          Loading groups...
+          {t('groups.loading')}
         </div>
       ) : error && groups.length === 0 ? (
         <div className="rounded-2xl bg-rose-500/10 border border-rose-400/30 p-5 text-rose-200">
@@ -269,23 +271,23 @@ console.log("groups",groups)
       ) : (
         <GlassCard delay={0.2} className="overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
-            <h2 className="text-white font-semibold">Groups</h2>
+            <h2 className="text-white font-semibold">{t('groups.table.title')}</h2>
             <div className="flex items-center gap-2 text-xs text-white/40 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-              {filtered.length} groups
+              {filtered.length} {t('groups.table.count')}
             </div>
           </div>
 
           <div className="grid grid-cols-[2.5fr_1fr_1.5fr_1.5fr] gap-4 px-5 py-3 text-xs text-white/40 border-b border-white/[0.04]">
-            <div className="flex items-center gap-1">Group Name</div>
-            <div>Members</div>
-            <div>Last Used</div>
-            <div>Actions</div>
+            <div className="flex items-center gap-1">{t('groups.table.groupName')}</div>
+            <div>{t('groups.table.members')}</div>
+            <div>{t('groups.table.lastUsed')}</div>
+            <div>{t('groups.table.actions')}</div>
           </div>
 
           <div>
             {paginated.length === 0 ? (
               <div className="py-16 text-center text-white/30 text-sm">
-                No groups found
+                {t('groups.table.empty')}
               </div>
             ) : (
               paginated.map((group) => (
@@ -321,7 +323,7 @@ console.log("groups",groups)
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-purple-300 bg-purple-500/15 border border-purple-500/25 hover:bg-purple-500/25 transition-all"
                     >
                       <Users className="w-3 h-3" />
-                      Manage
+                      {t('groups.button.manage')}
                     </button>
 
                     <AnimatePresence>
@@ -333,7 +335,7 @@ console.log("groups",groups)
                           transition={{ duration: 0.15 }}
                           className="absolute top-full left-0 mt-1.5 z-50 px-3 py-2 rounded-xl bg-bg-secondary/95 backdrop-blur-xl border border-white/10 shadow-glass text-xs text-white/80 whitespace-nowrap"
                         >
-                          Manage Members
+                          {t('groups.manage.tooltip')}
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -343,7 +345,7 @@ console.log("groups",groups)
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white/60 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] transition-all"
                     >
                       <Pencil className="w-3 h-3" />
-                      Edit
+                      {t('common.edit')}
                     </button>
 
                     <button
@@ -351,7 +353,7 @@ console.log("groups",groups)
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-pink-300 bg-pink-500/10 border border-pink-500/20 hover:bg-pink-500/20 transition-all"
                     >
                       <Trash2 className="w-3 h-3" />
-                      Delete
+                      {t('groups.button.delete')}
                     </button>
                   </div>
                 </div>
@@ -367,7 +369,7 @@ console.log("groups",groups)
               className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
-              Previous
+              {t('common.previous')}
             </button>
 
             <div className="flex items-center gap-1">
@@ -391,7 +393,7 @@ console.log("groups",groups)
               disabled={page >= totalPages}
               className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
-              Next
+              {t('common.next')}
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -417,7 +419,7 @@ console.log("groups",groups)
             >
               <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
                 <div className="space-y-0.5">
-                  <div className="text-sm text-white/40">Manage Members</div>
+                  <div className="text-sm text-white/40">{t('groups.manage.modal.title')}</div>
                   <div className="text-lg font-semibold text-white">{manageGroup.groupName}</div>
                 </div>
                 <button
@@ -463,7 +465,7 @@ console.log("groups",groups)
                           <Search className="w-4 h-4 text-white/30" />
                           <input
                             type="text"
-                            placeholder="Search contacts..."
+                            placeholder={t('groups.manage.search.placeholder')}
                             value={manageSearch}
                             onChange={(e) => setManageSearch(e.target.value)}
                             className="flex-1 bg-transparent text-sm text-white/80 placeholder-white/25 outline-none"
@@ -480,12 +482,12 @@ console.log("groups",groups)
                           {manageView === 'members' ? (
                             <>
                               <UserPlus className="w-3.5 h-3.5" />
-                              Add others
+                              {t('groups.manage.button.addOthers')}
                             </>
                           ) : (
                             <>
                               <UserCheck className="w-3.5 h-3.5" />
-                              View members
+                              {t('groups.manage.button.viewMembers')}
                             </>
                           )}
                         </button>
@@ -500,25 +502,25 @@ console.log("groups",groups)
                           {allVisibleChecked ? (
                             <>
                               <Square className="w-3.5 h-3.5" />
-                              Deselect all
+                              {t('groups.manage.button.deselectAll')}
                             </>
                           ) : (
                             <>
                               <CheckSquare className="w-3.5 h-3.5" />
-                              Select all
+                              {t('groups.manage.button.selectAll')}
                             </>
                           )}
                         </button>
                         <div className="text-xs text-white/35">
-                          {manageView === 'members' ? 'Members' : 'Other contacts'}: <span className="text-white/70 font-medium">{visibleList.length}</span>
+                          {manageView === 'members' ? t('groups.manage.members.label') : t('groups.manage.button.addOthers')}: <span className="text-white/70 font-medium">{visibleList.length}</span>
                           <span className="mx-2">•</span>
-                          Selected: <span className="text-white/70 font-medium">{draftSelected.size}</span>
+                          {t('groups.manage.selected.label')}: <span className="text-white/70 font-medium">{draftSelected.size}</span>
                         </div>
                       </div>
                       <div className="text-xs text-white/35">
                         {manageView === 'members'
-                          ? 'Uncheck to remove contacts from this group.'
-                          : 'Check contacts to add them to this group. They will be moved from any other group.'}
+                          ? t('groups.manage.help.removeText')
+                          : t('groups.manage.help.addText')}
                       </div>
                     </div>
 
@@ -545,13 +547,13 @@ console.log("groups",groups)
                               </div>
                             </div>
                             <div className="text-xs text-white/35 whitespace-nowrap">
-                              {checked ? 'In group' : 'Not in group'}
+                              {checked ? t('groups.manage.status.inGroup') : t('groups.manage.status.notInGroup')}
                             </div>
                           </label>
                         )
                       })}
                       {visibleList.length === 0 && (
-                        <div className="px-3 py-6 text-sm text-white/35">No contacts found</div>
+                        <div className="px-3 py-6 text-sm text-white/35">{t('groups.manage.empty')}</div>
                       )}
                     </div>
                   </>
@@ -563,14 +565,14 @@ console.log("groups",groups)
                   onClick={closeManage}
                   className="px-4 py-2.5 rounded-xl text-sm text-white/60 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] transition-all"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={saveManage}
                   disabled={saving}
                   className="px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-purple-600/80 to-blue-600/80 border border-purple-500/30 hover:shadow-glow-purple transition-all disabled:opacity-50"
                 >
-                  {saving ? 'Saving...' : 'Save'}
+                  {saving ? t('common.saving') : t('common.save')}
                 </button>
               </div>
             </motion.div>
@@ -597,7 +599,7 @@ console.log("groups",groups)
             >
               <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
                 <div className="text-lg font-semibold text-white">
-                  {editGroup ? 'Edit Group' : 'Create Group'}
+                  {editGroup ? t('groups.edit.modal.title') : t('groups.create.modal.title')}
                 </div>
                 <button
                   onClick={closeCreateEdit}
@@ -607,12 +609,12 @@ console.log("groups",groups)
                 </button>
               </div>
               <div className="px-5 py-4 space-y-3">
-                <label className="block text-sm text-white/70">Group name</label>
+                <label className="block text-sm text-white/70">{t('groups.form.groupName')}</label>
                 <input
                   type="text"
                   value={groupNameInput}
                   onChange={(e) => setGroupNameInput(e.target.value)}
-                  placeholder="Enter group name"
+                  placeholder={t('groups.form.groupNamePlaceholder')}
                   className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/85 placeholder-white/25 outline-none focus:border-purple-500/40 focus:bg-white/[0.07] transition-all"
                 />
               </div>
@@ -621,14 +623,14 @@ console.log("groups",groups)
                   onClick={closeCreateEdit}
                   className="px-4 py-2.5 rounded-xl text-sm text-white/60 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] transition-all"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={saveCreateEdit}
                   disabled={saving}
                   className="px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-purple-600/80 to-blue-600/80 border border-purple-500/30 hover:shadow-glow-purple transition-all disabled:opacity-50"
                 >
-                  {saving ? 'Saving...' : 'Save'}
+                  {saving ? t('common.saving') : t('common.save')}
                 </button>
               </div>
             </motion.div>
@@ -653,23 +655,23 @@ console.log("groups",groups)
               transition={{ duration: 0.18 }}
               className="relative w-full max-w-md rounded-2xl bg-bg-secondary/95 backdrop-blur-2xl border border-white/10 shadow-glass-lg overflow-hidden"
             >
-              <div className="px-5 py-4 border-b border-white/[0.06] text-lg font-semibold text-white">Delete Group</div>
+              <div className="px-5 py-4 border-b border-white/[0.06] text-lg font-semibold text-white">{t('groups.delete.modal.title')}</div>
               <div className="px-5 py-4 text-sm text-white/70">
-                Are you sure you want to delete group &quot;{deleteGroup.groupName}&quot;? Contacts in this group will be unassigned.
+                {t('groups.delete.confirm', { name: deleteGroup.groupName })}
               </div>
               <div className="px-5 py-4 border-t border-white/[0.06] flex items-center justify-end gap-2">
                 <button
                   onClick={() => setDeleteGroup(null)}
                   className="px-4 py-2.5 rounded-xl text-sm text-white/60 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] transition-all"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={handleDeleteGroup}
                   disabled={saving}
                   className="px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-pink-600/80 to-red-600/80 border border-pink-500/30 hover:shadow-glow-purple transition-all disabled:opacity-50"
                 >
-                  {saving ? 'Deleting...' : 'Delete'}
+                  {saving ? t('common.deleting') : t('common.delete')}
                 </button>
               </div>
             </motion.div>
