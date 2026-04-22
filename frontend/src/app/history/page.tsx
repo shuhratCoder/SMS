@@ -10,12 +10,13 @@ import {
 import { GlassCard } from '@/components/ui/GlassCard'
 import { api } from "@/lib/api"
 import { cn, getInitials } from '@/lib/utils'
+import { useTranslation } from '@/lib/i18n'
 
-const statusConfig: Record<string, { label: string; className: string; icon: string }> = {
-  sent:      { label: 'Sent',      className: 'badge-sent',      icon: '✓' },
-  delivered: { label: 'Delivered', className: 'badge-delivered', icon: '✓✓' },
-  failed:    { label: 'Failed',    className: 'badge-failed',    icon: '✗' },
-  pending:   { label: 'Pending',   className: 'badge-pending',   icon: '⏳' },
+const statusConfig: Record<string, { labelKey: string; className: string; icon: string }> = {
+  sent:      { labelKey: 'history.filter.sent',      className: 'badge-sent',      icon: '✓' },
+  delivered: { labelKey: 'history.filter.delivered', className: 'badge-delivered', icon: '✓✓' },
+  failed:    { labelKey: 'history.filter.failed',    className: 'badge-failed',    icon: '✗' },
+  pending:   { labelKey: 'history.filter.pending',   className: 'badge-pending',   icon: '⏳' },
 }
 
 const avatarColors = [
@@ -69,6 +70,7 @@ function exportToCSV(data: any[]) {
 }
 
 export default function HistoryPage() {
+  const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
   const [page, setPage] = useState(1)
@@ -111,7 +113,7 @@ export default function HistoryPage() {
         animate={{ opacity: 1, x: 0 }}
         className="text-2xl font-bold text-white font-display"
       >
-        SMS History
+        {t('history.title')}
       </motion.h1>
 
       {/* Search */}
@@ -125,7 +127,7 @@ export default function HistoryPage() {
           <Search className="w-4 h-4 text-white/30 flex-shrink-0" />
           <input
             type="text"
-            placeholder="Search by recipient or message..."
+            placeholder={t('history.search.placeholder')}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1) }}
             className="flex-1 bg-transparent text-sm text-white/80 placeholder-white/25 outline-none"
@@ -152,7 +154,7 @@ export default function HistoryPage() {
                 : 'text-white/40 hover:text-white/70 hover:bg-white/[0.04] border border-transparent'
             )}
           >
-            {s === 'all' ? 'All' : s}
+            {t(`history.filter.${s}`)}
           </button>
         ))}
       </motion.div>
@@ -160,10 +162,10 @@ export default function HistoryPage() {
       {/* Table */}
       <GlassCard delay={0.2} className="overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
-          <h2 className="text-white font-semibold">SMS History</h2>
+          <h2 className="text-white font-semibold">{t('history.table.title')}</h2>
           <div className="flex items-center gap-2">
             <div className="text-xs text-white/40 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-              {filtered.length} messages
+              {filtered.length} {t('history.table.count')}
             </div>
             <button
               onClick={() => exportToCSV(filtered)}
@@ -171,18 +173,18 @@ export default function HistoryPage() {
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-white/50 bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] hover:text-white/80 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <Download className="w-3 h-3" />
-              Export
+              {t('history.button.export')}
             </button>
           </div>
         </div>
 
         {/* Column headers */}
         <div className="flex items-center px-5 py-3 text-xs text-white/40 border-b border-white/[0.04]">
-          <div style={{ width: '50%' }} className="pr-2">Recipient</div>
+          <div style={{ width: '50%' }} className="pr-2">{t('history.table.recipient')}</div>
           <div className="flex items-center gap-2" style={{ width: '50%' }}>
-            <div style={{ width: '50%' }}>Message Summary</div>
-            <div style={{ width: '20%' }}>Status</div>
-            <div style={{ width: '30%' }}>Sent At</div>
+            <div style={{ width: '50%' }}>{t('history.table.messageSummary')}</div>
+            <div style={{ width: '20%' }}>{t('history.table.status')}</div>
+            <div style={{ width: '30%' }}>{t('history.table.sentAt')}</div>
           </div>
         </div>
 
@@ -190,11 +192,11 @@ export default function HistoryPage() {
         <div>
           {loading ? (
             <div className="py-16 text-center text-white/30 text-sm">
-              Loading...
+              {t('common.loading')}
             </div>
           ) : paginated.length === 0 ? (
             <div className="py-16 text-center text-white/30 text-sm">
-              No messages found
+              {t('history.table.empty')}
             </div>
           ) : (
             paginated.map((sms, i) => {
@@ -225,7 +227,7 @@ export default function HistoryPage() {
                         status.className
                       )}>
                         <span>{status.icon}</span>
-                        {status.label}
+                        {t(status.labelKey)}
                       </span>
                     </div>
 
@@ -247,7 +249,7 @@ export default function HistoryPage() {
             className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <ChevronLeft className="w-3.5 h-3.5" />
-            Previous
+            {t('common.previous')}
           </button>
 
           <div className="flex items-center gap-1 flex-wrap justify-center">
@@ -272,7 +274,7 @@ export default function HistoryPage() {
             disabled={page >= totalPages}
             className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
-            Next
+            {t('common.next')}
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -305,10 +307,10 @@ export default function HistoryPage() {
                   className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm text-white/60 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:text-white/90 hover:border-purple-500/30 transition-all"
                 >
                   <ArrowLeft className="w-4 h-4" />
-                  Back
+                  {t('history.modal.back')}
                 </button>
                 <div className="text-sm font-semibold text-white/80">
-                  Message Details
+                  {t('history.modal.messageDetails')}
                 </div>
                 <div className="w-[76px]" />
               </div>
@@ -319,7 +321,7 @@ export default function HistoryPage() {
                 <div>
                   <div className="flex items-center gap-2 text-xs text-white/40 uppercase tracking-wide mb-2">
                     <MessageSquare className="w-3.5 h-3.5" />
-                    Message
+                    {t('history.detail.message')}
                   </div>
                   <div className="p-4 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/85 leading-relaxed whitespace-pre-wrap break-words">
                     {selectedSms.message || '—'}
@@ -330,14 +332,14 @@ export default function HistoryPage() {
                 <div>
                   <div className="flex items-center gap-2 text-xs text-white/40 uppercase tracking-wide mb-2">
                     <Users className="w-3.5 h-3.5" />
-                    Recipients
+                    {t('history.detail.recipients')}
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {[
                       ...(selectedSms.contacts?.map((c: any) => ({ type: 'contact', name: c.fullName })) || []),
                       ...(selectedSms.groups?.map((g: any) => ({ type: 'group', name: g.groupName })) || []),
                     ].length === 0 ? (
-                      <span className="text-sm text-white/40">No recipients</span>
+                      <span className="text-sm text-white/40">{t('history.detail.noRecipients')}</span>
                     ) : (
                       <>
                         {selectedSms.contacts?.map((c: any, i: number) => (
@@ -372,7 +374,7 @@ export default function HistoryPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <div className="text-xs text-white/40 uppercase tracking-wide mb-2">
-                      Status
+                      {t('history.detail.status')}
                     </div>
                     <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.08]">
                       {(() => {
@@ -383,7 +385,7 @@ export default function HistoryPage() {
                             status.className
                           )}>
                             <span>{status.icon}</span>
-                            {status.label}
+                            {t(status.labelKey)}
                           </span>
                         )
                       })()}
@@ -392,7 +394,7 @@ export default function HistoryPage() {
                   <div>
                     <div className="flex items-center gap-2 text-xs text-white/40 uppercase tracking-wide mb-2">
                       <Clock className="w-3.5 h-3.5" />
-                      Sent At
+                      {t('history.detail.sentAt')}
                     </div>
                     <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/80">
                       {selectedSms.createdAt ? formatTime(selectedSms.createdAt) : '—'}

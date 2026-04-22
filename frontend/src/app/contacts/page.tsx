@@ -8,6 +8,7 @@ import {
 import { GlassCard } from '@/components/ui/GlassCard'
 import { getInitials } from '@/lib/utils'
 import { api } from '@/lib/api'
+import { useTranslation } from '@/lib/i18n'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 const ITEMS_PER_PAGE = 8
@@ -44,6 +45,7 @@ function formatUzPhone(input: string): string {
 const PHONE_FULL_LENGTH = '+998 XX XXX XX XX'.length
 
 function ContactsPageInner() {
+  const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [contacts, setContacts] = useState<any[]>([])
@@ -199,7 +201,7 @@ function ContactsPageInner() {
           animate={{ opacity: 1, x: 0 }}
           className="text-2xl font-bold text-white font-display"
         >
-          Contacts
+          {t('contacts.title')}
         </motion.h1>
       </div>
 
@@ -214,7 +216,7 @@ function ContactsPageInner() {
           <Search className="w-4 h-4 text-white/30 flex-shrink-0" />
           <input
             type="text"
-            placeholder="Search contacts..."
+            placeholder={t('contacts.search.placeholder')}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1) }}
             className="flex-1 bg-transparent text-sm text-white/80 placeholder-white/25 outline-none"
@@ -228,13 +230,13 @@ function ContactsPageInner() {
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600/80 to-blue-600/80 border border-purple-500/30 text-white text-sm font-medium hover:shadow-glow-purple hover:-translate-y-0.5 transition-all"
         >
           <Plus className="w-4 h-4" />
-          Add Contact
+          {t('contacts.button.add')}
         </button>
       </motion.div>
 
       {loading ? (
         <div className="rounded-2xl bg-white/[0.06] border border-white/[0.08] p-5 text-white/70">
-          Loading contacts...
+          {t('contacts.loading')}
         </div>
       ) : error && contacts.length === 0 ? (
         <div className="rounded-2xl bg-rose-500/10 border border-rose-400/30 p-5 text-rose-200">
@@ -243,23 +245,23 @@ function ContactsPageInner() {
       ) : (
         <GlassCard delay={0.2} className="overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
-            <h2 className="text-white font-semibold">Contacts</h2>
+            <h2 className="text-white font-semibold">{t('contacts.table.title')}</h2>
             <div className="flex items-center gap-2 text-xs text-white/40 px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/[0.06]">
-              {filtered.length} contacts
+              {filtered.length} {t('contacts.table.count')}
             </div>
           </div>
 
           <div className="grid grid-cols-[2fr_2fr_2fr_1.5fr] gap-4 px-5 py-3 text-xs text-white/40 border-b border-white/[0.04]">
-            <div className="flex items-center gap-1">Full Name</div>
-            <div>Phone Number</div>
-            <div>Position</div>
-            <div>Actions</div>
+            <div className="flex items-center gap-1">{t('contacts.table.fullName')}</div>
+            <div>{t('contacts.table.phoneNumber')}</div>
+            <div>{t('contacts.table.position')}</div>
+            <div>{t('contacts.table.actions')}</div>
           </div>
 
           <div>
             {paginated.length === 0 ? (
               <div className="py-16 text-center text-white/30 text-sm">
-                No contacts found
+                {t('contacts.table.empty')}
               </div>
             ) : (
               paginated.map((contact, i) => (
@@ -283,7 +285,7 @@ function ContactsPageInner() {
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-white/60 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:text-white/90 transition-all"
                     >
                       <Pencil className="w-3 h-3" />
-                      Edit
+                      {t('common.edit')}
                     </button>
                     <button
                       onClick={() => setDeleteContact(contact)}
@@ -305,7 +307,7 @@ function ContactsPageInner() {
               className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
-              Previous
+              {t('common.previous')}
             </button>
 
             <div className="flex items-center gap-1">
@@ -329,7 +331,7 @@ function ContactsPageInner() {
               disabled={page >= totalPages}
               className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
-              Next
+              {t('common.next')}
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -343,22 +345,22 @@ function ContactsPageInner() {
           <div className="relative w-full max-w-xl rounded-2xl bg-bg-secondary/95 backdrop-blur-2xl border border-white/10 shadow-glass-lg overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
               <div className="text-lg font-semibold text-white">
-                {editContact ? 'Edit Contact' : 'Add Contact'}
+                {editContact ? t('contacts.modal.edit') : t('contacts.modal.add')}
               </div>
             </div>
             <div className="px-5 py-4 grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label className="block text-sm text-white/70 mb-1">Full name *</label>
+                <label className="block text-sm text-white/70 mb-1">{t('contacts.form.fullName')}</label>
                 <input
                   type="text"
                   value={form.fullName}
                   onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
                   className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/85 placeholder-white/25 outline-none focus:border-purple-500/40 focus:bg-white/[0.07] transition-all"
-                  placeholder="John Doe"
+                  placeholder={t('contacts.form.fullNamePlaceholder')}
                 />
               </div>
               <div>
-                <label className="block text-sm text-white/70 mb-1">Phone *</label>
+                <label className="block text-sm text-white/70 mb-1">{t('contacts.form.phone')}</label>
                 <input
                   type="tel"
                   value={form.phoneNumber}
@@ -368,17 +370,17 @@ function ContactsPageInner() {
                   onChange={(e) => setForm((f) => ({ ...f, phoneNumber: formatUzPhone(e.target.value) }))}
                   maxLength={PHONE_FULL_LENGTH}
                   className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/85 placeholder-white/25 outline-none focus:border-purple-500/40 focus:bg-white/[0.07] transition-all"
-                  placeholder="+998 XX XXX XX XX"
+                  placeholder={t('contacts.form.phonePlaceholder')}
                 />
               </div>
               <div>
-                <label className="block text-sm text-white/70 mb-1">Position</label>
+                <label className="block text-sm text-white/70 mb-1">{t('contacts.form.position')}</label>
                 <input
                   type="text"
                   value={form.position}
                   onChange={(e) => setForm((f) => ({ ...f, position: e.target.value }))}
                   className="w-full px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/85 placeholder-white/25 outline-none focus:border-purple-500/40 focus:bg-white/[0.07] transition-all"
-                  placeholder="Manager"
+                  placeholder={t('contacts.form.positionPlaceholder')}
                 />
               </div>
             </div>
@@ -387,14 +389,14 @@ function ContactsPageInner() {
                 onClick={closeForm}
                 className="px-4 py-2.5 rounded-xl text-sm text-white/60 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] transition-all"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={saveForm}
                 disabled={saving}
                 className="px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-purple-600/80 to-blue-600/80 border border-purple-500/30 hover:shadow-glow-purple transition-all disabled:opacity-50"
               >
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? t('common.saving') : t('common.save')}
               </button>
             </div>
           </div>
@@ -406,23 +408,23 @@ function ContactsPageInner() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDeleteContact(null)} />
           <div className="relative w-full max-w-md rounded-2xl bg-bg-secondary/95 backdrop-blur-2xl border border-white/10 shadow-glass-lg overflow-hidden">
-            <div className="px-5 py-4 border-b border-white/[0.06] text-lg font-semibold text-white">Delete Contact</div>
+            <div className="px-5 py-4 border-b border-white/[0.06] text-lg font-semibold text-white">{t('contacts.modal.deleteTitle')}</div>
             <div className="px-5 py-4 text-sm text-white/70">
-              Are you sure you want to delete contact &quot;{deleteContact.fullName}&quot;?
+              {t('contacts.modal.deleteConfirm', { name: deleteContact.fullName })}
             </div>
             <div className="px-5 py-4 border-t border-white/[0.06] flex items-center justify-end gap-2">
               <button
                 onClick={() => setDeleteContact(null)}
                 className="px-4 py-2.5 rounded-xl text-sm text-white/60 bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] transition-all"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleDelete}
                 disabled={saving}
                 className="px-4 py-2.5 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-pink-600/80 to-red-600/80 border border-pink-500/30 hover:shadow-glow-purple transition-all disabled:opacity-50"
               >
-                {saving ? 'Deleting...' : 'Delete'}
+                {saving ? t('common.deleting') : t('common.delete')}
               </button>
             </div>
           </div>

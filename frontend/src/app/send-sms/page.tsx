@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { Send, Check, Search, X } from "lucide-react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { api } from "@/lib/api";
+import { useTranslation } from "@/lib/i18n";
 
 interface SendSmsForm {
   message: string;
@@ -21,6 +22,7 @@ interface Recipient {
 }
 
 export default function SendSmsPage() {
+  const { t } = useTranslation();
   const { register, handleSubmit, watch, reset, formState: { errors } } = useForm<SendSmsForm>();
 
   const [groups, setGroups] = useState<any[]>([]);
@@ -144,21 +146,21 @@ export default function SendSmsPage() {
         animate={{ opacity: 1, x: 0 }}
         className="text-2xl font-bold text-white font-display"
       >
-        Send SMS
+        {t('sendSms.title')}
       </motion.h1>
 
       <GlassCard className="max-w-3xl">
         <div className="p-6">
-          <h2 className="text-lg font-semibold text-white mb-6">Compose Message</h2>
+          <h2 className="text-lg font-semibold text-white mb-6">{t('sendSms.compose.title')}</h2>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Multi-select recipients */}
             <div ref={dropdownRef}>
               <label className="block text-sm text-white/70 mb-2">
-                Recipients
+                {t('sendSms.recipients.label')}
                 {selectedRecipients.length > 0 && (
                   <span className="ml-2 text-xs text-purple-300">
-                    ({totalRecipientCount} recipient{totalRecipientCount !== 1 ? "s" : ""})
+                    ({totalRecipientCount})
                   </span>
                 )}
               </label>
@@ -204,7 +206,7 @@ export default function SendSmsPage() {
                       setShowDropdown(true);
                     }}
                     onFocus={() => setShowDropdown(true)}
-                    placeholder={selectedRecipients.length === 0 ? "Search groups or contacts..." : "Add more..."}
+                    placeholder={selectedRecipients.length === 0 ? t('sendSms.recipients.placeholder') : t('sendSms.recipients.placeholderWithSelection')}
                     className="flex-1 bg-transparent text-sm text-white/80 placeholder-white/25 outline-none"
                   />
                 </div>
@@ -215,7 +217,7 @@ export default function SendSmsPage() {
                 <div className="mt-2 max-h-64 overflow-y-auto rounded-xl bg-bg-secondary/95 backdrop-blur-2xl border border-white/10 shadow-glass-lg">
                   {filteredGroups.length > 0 && (
                     <>
-                      <div className="px-3 pt-3 pb-1 text-xs text-white/40 font-medium">Groups</div>
+                      <div className="px-3 pt-3 pb-1 text-xs text-white/40 font-medium">{t('sendSms.dropdown.groups')}</div>
                       {filteredGroups.map((r) => (
                         <div
                           key={r.id}
@@ -223,7 +225,7 @@ export default function SendSmsPage() {
                           className="px-3 py-2.5 mx-1 rounded-lg cursor-pointer hover:bg-white/[0.06] transition-colors flex items-center justify-between"
                         >
                           <span className="text-sm text-white/80">📁 {r.label}</span>
-                          <span className="text-xs text-white/40">{r.count} members</span>
+                          <span className="text-xs text-white/40">{r.count} {t('sendSms.dropdown.groupsCount')}</span>
                         </div>
                       ))}
                     </>
@@ -231,7 +233,7 @@ export default function SendSmsPage() {
 
                   {filteredContacts.length > 0 && (
                     <>
-                      <div className="px-3 pt-3 pb-1 text-xs text-white/40 font-medium">Contacts</div>
+                      <div className="px-3 pt-3 pb-1 text-xs text-white/40 font-medium">{t('sendSms.dropdown.contacts')}</div>
                       {filteredContacts.map((r) => (
                         <div
                           key={r.id}
@@ -249,19 +251,19 @@ export default function SendSmsPage() {
 
             {/* Message */}
             <div>
-              <label className="block text-sm text-white/70 mb-2">Message</label>
+              <label className="block text-sm text-white/70 mb-2">{t('sendSms.message.label')}</label>
               <textarea
                 {...register("message", { required: true, maxLength: 480 })}
                 rows={5}
                 className="w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/85 placeholder-white/25 outline-none focus:border-purple-500/40 focus:bg-white/[0.07] transition-all resize-none"
-                placeholder="Type your message here..."
+                placeholder={t('sendSms.message.placeholder')}
               />
               <div className="flex items-center justify-between mt-1.5">
                 <span className="text-xs text-white/35">
-                  Est. SMS Count: {smsCount}
+                  {t('sendSms.smsCount')}: {smsCount}
                 </span>
                 <span className={`text-xs ${charCount > 480 ? "text-red-400" : "text-white/35"}`}>
-                  {charCount} / {MAX_CHARS} characters
+                  {charCount} / {MAX_CHARS} {t('sendSms.charCount')}
                 </span>
               </div>
             </div>
@@ -283,17 +285,17 @@ export default function SendSmsPage() {
               {isSending ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Sending...
+                  {t('sendSms.button.sending')}
                 </>
               ) : sent ? (
                 <>
                   <Check className="w-4 h-4" />
-                  Sent Successfully!
+                  {t('sendSms.button.sent')}
                 </>
               ) : (
                 <>
                   <Send className="w-4 h-4" />
-                  Send SMS
+                  {t('sendSms.button.send')}
                 </>
               )}
             </button>
