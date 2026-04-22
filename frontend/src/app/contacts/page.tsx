@@ -184,11 +184,16 @@ function ContactsPageInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, contacts])
 
-  const filtered = contacts.filter((c) =>
-    (c.fullName || '').toLowerCase().includes(search.toLowerCase()) ||
-    (c.phoneNumber || '').includes(search) ||
-    (c.position || '').toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = contacts
+    .filter((c) =>
+      (c.fullName || '').toLowerCase().includes(search.toLowerCase()) ||
+      (c.phoneNumber || '').includes(search) ||
+      (c.position || '').toLowerCase().includes(search.toLowerCase())
+    )
+    .slice()
+    .sort((a, b) =>
+      (a.fullName || '').localeCompare(b.fullName || '', undefined, { sensitivity: 'base' })
+    )
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)

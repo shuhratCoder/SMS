@@ -93,15 +93,22 @@ export default function HistoryPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  const filtered = smsHistory.filter((s) => {
-    const recipient = getRecipient(s)
-    const matchSearch =
-      recipient.toLowerCase().includes(search.toLowerCase()) ||
-      (s.message || '').toLowerCase().includes(search.toLowerCase())
-    const effectiveStatus = s.status || 'sent'
-    const matchStatus = filterStatus === 'all' || effectiveStatus === filterStatus
-    return matchSearch && matchStatus
-  })
+  const filtered = smsHistory
+    .filter((s) => {
+      const recipient = getRecipient(s)
+      const matchSearch =
+        recipient.toLowerCase().includes(search.toLowerCase()) ||
+        (s.message || '').toLowerCase().includes(search.toLowerCase())
+      const effectiveStatus = s.status || 'sent'
+      const matchStatus = filterStatus === 'all' || effectiveStatus === filterStatus
+      return matchSearch && matchStatus
+    })
+    .slice()
+    .sort((a, b) => {
+      const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0
+      const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0
+      return tb - ta
+    })
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)

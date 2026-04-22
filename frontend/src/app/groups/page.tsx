@@ -215,9 +215,14 @@ function GroupsPageInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, groups])
 
-  const filtered = groups.filter((g) =>
-    (g.groupName || '').toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = groups
+    .filter((g) =>
+      (g.groupName || '').toLowerCase().includes(search.toLowerCase())
+    )
+    .slice()
+    .sort((a, b) =>
+      (a.groupName || '').localeCompare(b.groupName || '', undefined, { sensitivity: 'base' })
+    )
   const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
 console.log("groups",groups)
@@ -438,9 +443,14 @@ console.log("groups",groups)
                   manageView === 'members'
                     ? allContacts.filter((c) => originalMemberIds.has(String(c.id)))
                     : allContacts.filter((c) => !originalMemberIds.has(String(c.id)))
-                const visibleList = sourceList.filter((c) =>
-                  (c.fullName || '').toLowerCase().includes(manageSearch.trim().toLowerCase())
-                )
+                const visibleList = sourceList
+                  .filter((c) =>
+                    (c.fullName || '').toLowerCase().includes(manageSearch.trim().toLowerCase())
+                  )
+                  .slice()
+                  .sort((a, b) =>
+                    (a.fullName || '').localeCompare(b.fullName || '', undefined, { sensitivity: 'base' })
+                  )
                 const visibleIds = visibleList.map((c) => String(c.id))
                 const allVisibleChecked =
                   visibleIds.length > 0 && visibleIds.every((id) => draftSelected.has(id))
